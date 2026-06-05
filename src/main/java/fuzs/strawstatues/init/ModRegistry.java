@@ -32,14 +32,11 @@ import java.util.UUID;
 public class ModRegistry {
     static final RegistryManager REGISTRY = RegistryManager.instant(StrawStatues.MOD_ID);
     public static final RegistryReference<Item> STRAW_STATUE_ITEM = REGISTRY.registerItem("straw_statue", () -> new StrawStatueItem(new Item.Properties().stacksTo(16)));
-    public static final RegistryReference<EntityType<StrawStatue>> STRAW_STATUE_ENTITY_TYPE = REGISTRY.registerEntityType("straw_statue", () -> {
-        return EntityType.Builder.of((EntityType<StrawStatue> entityType, Level level) -> new StrawStatue(entityType, level), MobCategory.MISC).sized(0.6F, 1.8F).clientTrackingRange(10);
-    });
-    public static final RegistryReference<MenuType<ArmorStandMenu>> STRAW_STATUE_MENU_TYPE = REGISTRY.registerExtendedMenuType("straw_statue", () -> (containerId, inventory, data) -> {
-        return ArmorStandMenu.create(ModRegistry.STRAW_STATUE_MENU_TYPE.get(), containerId, inventory, data, null);
-    });
+    public static final RegistryReference<EntityType<StrawStatue>> STRAW_STATUE_ENTITY_TYPE = REGISTRY.registerEntityType("straw_statue", () -> EntityType.Builder.of((EntityType<StrawStatue> entityType, Level level) -> new StrawStatue(entityType, level), MobCategory.MISC).sized(0.6F, 1.8F).clientTrackingRange(10));
+    public static final RegistryReference<MenuType<ArmorStandMenu>> STRAW_STATUE_MENU_TYPE = REGISTRY.registerExtendedMenuType("straw_statue", () -> (containerId, inventory, data) -> ArmorStandMenu.create(ModRegistry.STRAW_STATUE_MENU_TYPE.get(), containerId, inventory, data, null));
 
     public static final ArmorStandScreenType MODEL_PARTS_SCREEN_TYPE = new ArmorStandScreenType("modelParts", new ItemStack(Items.YELLOW_WOOL));
+    public static final ArmorStandScreenType STRAW_STATUE_EYE_SCREEN_TYPE = new ArmorStandScreenType("eyes", new ItemStack(Items.ENDER_EYE));
     public static final ArmorStandScreenType STRAW_STATUE_POSITION_SCREEN_TYPE = new ArmorStandScreenType("position", new ItemStack(Items.GRASS_BLOCK));
     public static final ArmorStandScreenType STRAW_STATUE_SCALE_SCREEN_TYPE = new ArmorStandScreenType("scale", new ItemStack(Items.HAY_BLOCK));
     public static final ArmorStandStyleOption SLIM_ARMS_STYLE_OPTION = new ArmorStandStyleOption() {

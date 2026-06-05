@@ -55,6 +55,7 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     public static final String MODEL_PARTS_KEY = "ModelParts";
     public static final String ENTITY_SCALE_KEY = "EntityScale";
     public static final String ENTITY_ROTATIONS_KEY = "EntityRotations";
+    public static final String EYE_DATA_KEY = "EyeData";
     public static final EntityDataAccessor<Optional<GameProfile>> DATA_OWNER = SynchedEntityData.defineId(StrawStatue.class, ModRegistry.GAME_PROFILE_ENTITY_DATA_SERIALIZER);
     public static final EntityDataAccessor<Boolean> DATA_SLIM_ARMS = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> DATA_CROUCHING = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.BOOLEAN);
@@ -66,6 +67,8 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     private final NavigableMap<Float, EntityDimensions> babyDimensions;
     public float entityScaleO = DEFAULT_ENTITY_SCALE;
     public Rotations entityRotationsO = DEFAULT_ENTITY_ROTATIONS;
+    @Nullable
+    private StrawStatueEyeData eyeData;
 
     public StrawStatue(EntityType<? extends StrawStatue> entityType, Level level) {
         super(entityType, level);
@@ -125,6 +128,9 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
         if (!DEFAULT_ENTITY_ROTATIONS.equals(entityRotations)) {
             tag.put(ENTITY_ROTATIONS_KEY, entityRotations.save());
         }
+        if (this.eyeData != null && this.eyeData.isValid()) {
+            tag.put(EYE_DATA_KEY, this.eyeData.toTag());
+        }
     }
 
     @Override
@@ -150,6 +156,9 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
             Rotations entityRotations = new Rotations(tag.getList(ENTITY_ROTATIONS_KEY, Tag.TAG_FLOAT));
             this.setEntityRotations(entityRotations.getX(), entityRotations.getZ());
             this.entityRotationsO = this.getEntityRotations();
+        }
+        if (tag.contains(EYE_DATA_KEY, Tag.TAG_COMPOUND)) {
+            this.eyeData = StrawStatueEyeData.fromTag(tag.getCompound(EYE_DATA_KEY));
         }
     }
 
@@ -289,6 +298,15 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
         return Mth.clamp((float) modelScale, MIN_MODEL_SCALE, MAX_MODEL_SCALE);
     }
 
+    @Nullable
+    public StrawStatueEyeData getEyeData() {
+        return this.eyeData;
+    }
+
+    public void setEyeData(@Nullable StrawStatueEyeData eyeData) {
+        this.eyeData = eyeData;
+    }
+
     @Override
     public void baseTick() {
         super.baseTick();
@@ -412,7 +430,7 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
 
     @Override
     public ArmorStandScreenType[] getScreenTypes() {
-        return new ArmorStandScreenType[]{ArmorStandScreenType.ROTATIONS, ArmorStandScreenType.POSES, ArmorStandScreenType.STYLE, ModRegistry.MODEL_PARTS_SCREEN_TYPE, ModRegistry.STRAW_STATUE_POSITION_SCREEN_TYPE, ModRegistry.STRAW_STATUE_SCALE_SCREEN_TYPE, ArmorStandScreenType.EQUIPMENT};
+        return new ArmorStandScreenType[]{ArmorStandScreenType.ROTATIONS, ArmorStandScreenType.POSES, ArmorStandScreenType.STYLE, ModRegistry.MODEL_PARTS_SCREEN_TYPE, ModRegistry.STRAW_STATUE_EYE_SCREEN_TYPE, ModRegistry.STRAW_STATUE_POSITION_SCREEN_TYPE, ModRegistry.STRAW_STATUE_SCALE_SCREEN_TYPE, ArmorStandScreenType.EQUIPMENT};
     }
 
     @Override

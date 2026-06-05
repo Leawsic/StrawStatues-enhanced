@@ -10,6 +10,7 @@ import fuzs.strawstatues.client.model.StrawStatueArmorModel;
 import fuzs.strawstatues.client.model.StrawStatueModel;
 import fuzs.strawstatues.client.renderer.entity.layers.StrawStatueCapeLayer;
 import fuzs.strawstatues.client.renderer.entity.layers.StrawStatueDeadmau5EarsLayer;
+import fuzs.strawstatues.client.renderer.entity.layers.StrawStatueEyeLayer;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -39,6 +40,7 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
         this.addLayer(new ElytraLayer<>(this, context.getModelSet()));
         this.addLayer(new StrawStatueDeadmau5EarsLayer(this));
         this.addLayer(new StrawStatueCapeLayer(this));
+        this.addLayer(new StrawStatueEyeLayer(this));
         this.addLayer(new CustomHeadLayer<>(this, context.getModelSet(), context.getItemInHandRenderer()));
     }
 
@@ -52,6 +54,42 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Reads the NativeImage from a dynamically-downloaded skin texture.
+     * Skins are registered in the TextureManager, NOT in the ResourceManager.
+     * Uses reflection to access the private {@code image} field of SimpleTexture/HttpTexture.
+     */
+    @Nullable
+    public static com.mojang.blaze3d.platform.NativeImage readSkinNativeImage(ResourceLocation skinLocation) {
+        Minecraft mc = Minecraft.getInstance();
+        net.minecraft.client.renderer.texture.AbstractTexture tex = mc.getTextureManager().getTexture(skinLocation);
+        try {
+            Class<?> clazz = tex.getClass();
+            while (clazz != null && clazz != Object.class) {
+                try {
+                    java.lang.reflect.Field field = clazz.getDeclaredField("image");
+                    field.setAccessible(true);
+                    Object value = field.get(tex);
+                    if (value instanceof com.mojang.blaze3d.platform.NativeImage img) {
+                        return img;
+                    }
+                } catch (NoSuchFieldException e) {
+                    // try superclass (HttpTexture extends SimpleTexture)
+                }
+                clazz = clazz.getSuperclass();
+            }
+        } catch (Exception ignored) {
+        }
+        // Fallback: try ResourceManager (works for vanilla/built-in textures)
+        try {
+            var resOpt = mc.getResourceManager().getResource(skinLocation);
+            if (resOpt.isPresent()) {
+                return com.mojang.blaze3d.platform.NativeImage.read(resOpt.get().open());
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     @Override

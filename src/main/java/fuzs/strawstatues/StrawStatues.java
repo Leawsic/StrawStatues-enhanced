@@ -12,6 +12,7 @@ import fuzs.puzzleslib.api.network.v2.NetworkHandlerV2;
 import fuzs.strawstatues.init.ModRegistry;
 import fuzs.strawstatues.network.client.C2SStrawStatueModelPartMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueOwnerMessage;
+import fuzs.strawstatues.network.client.C2SStrawStatueEyeMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueScaleMessage;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
 import net.minecraft.core.BlockPos;
@@ -26,6 +27,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.DispenserBlock;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +49,7 @@ public class StrawStatues implements ModConstructor {
         NETWORK.register(C2SStrawStatueModelPartMessage.class, C2SStrawStatueModelPartMessage::new, MessageDirection.TO_SERVER);
         NETWORK.register(C2SStrawStatueOwnerMessage.class, C2SStrawStatueOwnerMessage::new, MessageDirection.TO_SERVER);
         NETWORK.register(C2SStrawStatueScaleMessage.class, C2SStrawStatueScaleMessage::new, MessageDirection.TO_SERVER);
+        NETWORK.register(C2SStrawStatueEyeMessage.class, C2SStrawStatueEyeMessage::new, MessageDirection.TO_SERVER);
     }
 
     private static void registerHandlers() {
@@ -61,7 +64,7 @@ public class StrawStatues implements ModConstructor {
         DispenserBlock.registerBehavior(ModRegistry.STRAW_STATUE_ITEM.get(), new DefaultDispenseItemBehavior() {
 
             @Override
-            public ItemStack execute(BlockSource blockSource, ItemStack stack) {
+            public @NotNull ItemStack execute(BlockSource blockSource, ItemStack stack) {
                 Direction direction = blockSource.getBlockState().getValue(DispenserBlock.FACING);
                 BlockPos blockpos = blockSource.getPos().relative(direction);
                 Level level = blockSource.getLevel();
@@ -83,12 +86,8 @@ public class StrawStatues implements ModConstructor {
 
     @Override
     public void onBuildCreativeModeTabContents(BuildCreativeModeTabContentsContext context) {
-        context.registerBuildListener(CreativeModeTabs.FUNCTIONAL_BLOCKS, (itemDisplayParameters, output) -> {
-            output.accept(ModRegistry.STRAW_STATUE_ITEM.get());
-        });
-        context.registerBuildListener(CreativeModeTabs.REDSTONE_BLOCKS, (itemDisplayParameters, output) -> {
-            output.accept(ModRegistry.STRAW_STATUE_ITEM.get());
-        });
+        context.registerBuildListener(CreativeModeTabs.FUNCTIONAL_BLOCKS, (itemDisplayParameters, output) -> output.accept(ModRegistry.STRAW_STATUE_ITEM.get()));
+        context.registerBuildListener(CreativeModeTabs.REDSTONE_BLOCKS, (itemDisplayParameters, output) -> output.accept(ModRegistry.STRAW_STATUE_ITEM.get()));
     }
 
     public static ResourceLocation id(String path) {

@@ -8,6 +8,7 @@ import fuzs.puzzlesapi.api.statues.v1.world.inventory.ArmorStandMenu;
 import fuzs.puzzleslib.api.client.core.v1.ClientModConstructor;
 import fuzs.puzzleslib.api.client.core.v1.context.EntityRenderersContext;
 import fuzs.puzzleslib.api.client.core.v1.context.LayerDefinitionsContext;
+import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueEyeScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueModelPartsScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatuePositionScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueScaleScreen;
@@ -30,11 +31,10 @@ public class StrawStatuesClient implements ClientModConstructor {
     @Override
     public void onClientSetup() {
         // compiler doesn't like method reference :(
-        MenuScreens.register(ModRegistry.STRAW_STATUE_MENU_TYPE.get(), (ArmorStandMenu menu, Inventory inventory, Component component) -> {
-            return ArmorStandScreenFactory.createLastScreenType(menu, inventory, component);
-        });
+        MenuScreens.register(ModRegistry.STRAW_STATUE_MENU_TYPE.get(), (ArmorStandMenu menu, Inventory inventory, Component component) -> ArmorStandScreenFactory.createLastScreenType(menu, inventory, component));
         ArmorStandScreenFactory.register(ModRegistry.MODEL_PARTS_SCREEN_TYPE, StrawStatueModelPartsScreen::new);
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_POSITION_SCREEN_TYPE, StrawStatuePositionScreen::new);
+        ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_EYE_SCREEN_TYPE, StrawStatueEyeScreen::new);
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_SCALE_SCREEN_TYPE, StrawStatueScaleScreen::new);
         ArmorStandRotationsScreen.registerPosePartMutatorFilter(ModRegistry.CAPE_POSE_PART_MUTATOR, armorStand -> {
             StrawStatue strawStatue = (StrawStatue) armorStand;
