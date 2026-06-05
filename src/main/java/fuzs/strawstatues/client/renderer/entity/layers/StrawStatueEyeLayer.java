@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
@@ -66,20 +67,22 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
         // Position at the head
         model.head.translateAndRotate(matrixStack);
 
-        // Render overlay quad on front face of head (z=4 in head-local 8×8 space)
+        // Render overlay quad covering the head front face.
+        // PlayerModel head cube: (-4,-8,-4) → (4,0,4), front face at z=4.
         RenderType renderType = RenderType.entityCutoutNoCull(overlayTexture);
         VertexConsumer consumer = buffer.getBuffer(renderType);
         Matrix4f pose = matrixStack.last().pose();
         Matrix3f normal = matrixStack.last().normal();
         float z = 4.02F; // slightly in front to avoid z-fighting
+        float top = -8.0F, bottom = 0.0F;
 
-        consumer.vertex(pose, -4.0F, -4.0F, z).color(255, 255, 255, 255).uv(0.0F, 0.0F)
+        consumer.vertex(pose, -4.0F, top, z).color(255, 255, 255, 255).uv(0.0F, 0.0F)
                 .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight).normal(normal, 0, 0, 1).endVertex();
-        consumer.vertex(pose, 4.0F, -4.0F, z).color(255, 255, 255, 255).uv(1.0F, 0.0F)
+        consumer.vertex(pose, 4.0F, top, z).color(255, 255, 255, 255).uv(1.0F, 0.0F)
                 .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight).normal(normal, 0, 0, 1).endVertex();
-        consumer.vertex(pose, 4.0F, 4.0F, z).color(255, 255, 255, 255).uv(1.0F, 1.0F)
+        consumer.vertex(pose, 4.0F, bottom, z).color(255, 255, 255, 255).uv(1.0F, 1.0F)
                 .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight).normal(normal, 0, 0, 1).endVertex();
-        consumer.vertex(pose, -4.0F, 4.0F, z).color(255, 255, 255, 255).uv(0.0F, 1.0F)
+        consumer.vertex(pose, -4.0F, bottom, z).color(255, 255, 255, 255).uv(0.0F, 1.0F)
                 .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight).normal(normal, 0, 0, 1).endVertex();
 
         matrixStack.popPose();
@@ -97,12 +100,8 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
         }
 
         // Try to generate new texture
-        ResourceLocation newTexture = generateOverlayTexture(entity, eyeData);
+        ResourceLocation newTexture = generateOverlayTexture(entity, eyeData, cached != null ? cached.location : null);
         if (newTexture != null) {
-            // Clean up old texture
-            if (cached != null) {
-                Minecraft.getInstance().getTextureManager().release(cached.location);
-            }
             textureCache.put(uuid, new CachedTexture(newTexture, eyeData));
             return newTexture;
         }
@@ -110,14 +109,26 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
         return cached != null ? cached.location : null;
     }
 
-    private ResourceLocation generateOverlayTexture(StrawStatue entity, StrawStatueEyeData eyeData) {
+    private int textureGenerationCounter;
+
+    private ResourceLocation generateOverlayTexture(StrawStatue entity, StrawStatueEyeData eyeData,
+                                                     @Nullable ResourceLocation oldLocation) {
         Optional<ResourceLocation> skinLoc = StrawStatueRenderer.getPlayerProfileTexture(
                 entity, MinecraftProfileTexture.Type.SKIN);
         if (skinLoc.isEmpty()) return null;
 
+        NativeImage skinImg = null;
+        boolean closeSkinImg = false;
         try {
             Minecraft mc = Minecraft.getInstance();
-            NativeImage skinImg = StrawStatueRenderer.readSkinNativeImage(skinLoc.get());
+            // Try 1: TextureManager reflection (image owned by TextureManager, don't close)
+            skinImg = StrawStatueRenderer.readSkinNativeImage(skinLoc.get());
+            // Try 2: direct URL download fallback (image owned by us, must close)
+            if (skinImg == null) {
+                StrawStatues.LOGGER.debug("EyeLayer: reflection failed, trying URL...");
+                skinImg = StrawStatueRenderer.readSkinFromUrl(entity);
+                closeSkinImg = true;
+            }
             if (skinImg == null) return null;
 
             NativeImage faceImg = new NativeImage(FACE_SIZE, FACE_SIZE, false);
@@ -131,17 +142,21 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
             applyEye(faceImg, eyeData, true);
             applyEye(faceImg, eyeData, false);
 
-            // Register as dynamic texture
+            // Register as dynamic texture with unique counter to avoid race with in-flight render
             DynamicTexture dynamicTexture = new DynamicTexture(faceImg);
-            ResourceLocation location = StrawStatues.id("eye_overlay/" + entity.getUUID().toString().replace("-", ""));
+            ResourceLocation location = StrawStatues.id("eye_overlay/" +
+                    entity.getUUID().toString().replace("-", "") + "_" + (++textureGenerationCounter));
             mc.getTextureManager().register(location, dynamicTexture);
-            faceImg.close(); // DynamicTexture now owns a copy
-            // skinImg is owned by TextureManager — do NOT close
+            faceImg.close();
             return location;
 
         } catch (Exception e) {
             StrawStatues.LOGGER.warn("Failed to generate eye overlay texture", e);
             return null;
+        } finally {
+            if (closeSkinImg && skinImg != null) {
+                skinImg.close();
+            }
         }
     }
 

@@ -65,6 +65,9 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
     public static com.mojang.blaze3d.platform.NativeImage readSkinNativeImage(ResourceLocation skinLocation) {
         Minecraft mc = Minecraft.getInstance();
         net.minecraft.client.renderer.texture.AbstractTexture tex = mc.getTextureManager().getTexture(skinLocation);
+
+        // Approach 1: reflection into SimpleTexture/HttpTexture
+        StrawStatues.LOGGER.debug("readSkinNativeImage: trying reflection for {}", skinLocation);
         try {
             Class<?> clazz = tex.getClass();
             while (clazz != null && clazz != Object.class) {
@@ -72,24 +75,66 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
                     java.lang.reflect.Field field = clazz.getDeclaredField("image");
                     field.setAccessible(true);
                     Object value = field.get(tex);
+                    StrawStatues.LOGGER.debug("readSkinNativeImage: class={} field.image={}", clazz.getSimpleName(),
+                            value != null ? value.getClass().getSimpleName() : "null");
                     if (value instanceof com.mojang.blaze3d.platform.NativeImage img) {
                         return img;
                     }
                 } catch (NoSuchFieldException e) {
-                    // try superclass (HttpTexture extends SimpleTexture)
+                    StrawStatues.LOGGER.debug("readSkinNativeImage: no 'image' field in {}", clazz.getSimpleName());
                 }
                 clazz = clazz.getSuperclass();
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            StrawStatues.LOGGER.warn("readSkinNativeImage: reflection failed", e);
         }
-        // Fallback: try ResourceManager (works for vanilla/built-in textures)
+
+        // Approach 2: ResourceManager fallback
         try {
             var resOpt = mc.getResourceManager().getResource(skinLocation);
             if (resOpt.isPresent()) {
+                StrawStatues.LOGGER.debug("readSkinNativeImage: found in ResourceManager");
                 return com.mojang.blaze3d.platform.NativeImage.read(resOpt.get().open());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            StrawStatues.LOGGER.debug("readSkinNativeImage: ResourceManager fallback failed", e);
+        }
+
+        StrawStatues.LOGGER.warn("readSkinNativeImage: all approaches failed for {}", skinLocation);
         return null;
+    }
+
+    /**
+     * Fallback: downloads the skin NativeImage directly from Mojang's skin server URL.
+     */
+    @Nullable
+    public static com.mojang.blaze3d.platform.NativeImage readSkinFromUrl(StrawStatue entity) {
+        GameProfile gameProfile = entity.getOwner().orElse(null);
+        if (gameProfile == null) return null;
+
+        Minecraft mc = Minecraft.getInstance();
+        Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> map =
+                mc.getSkinManager().getInsecureSkinInformation(gameProfile);
+        MinecraftProfileTexture texture = map.get(MinecraftProfileTexture.Type.SKIN);
+        if (texture == null || texture.getUrl() == null) {
+            StrawStatues.LOGGER.warn("readSkinFromUrl: no skin URL for {}", gameProfile.getName());
+            return null;
+        }
+
+        try {
+            String url = texture.getUrl();
+            StrawStatues.LOGGER.debug("readSkinFromUrl: downloading from {}", url);
+            java.net.URL skinUrl = new java.net.URL(url);
+            java.io.InputStream in = skinUrl.openStream();
+            com.mojang.blaze3d.platform.NativeImage img =
+                    com.mojang.blaze3d.platform.NativeImage.read(in);
+            in.close();
+            StrawStatues.LOGGER.debug("readSkinFromUrl: success, {}×{}", img.getWidth(), img.getHeight());
+            return img;
+        } catch (Exception e) {
+            StrawStatues.LOGGER.warn("readSkinFromUrl: download failed", e);
+            return null;
+        }
     }
 
     @Override

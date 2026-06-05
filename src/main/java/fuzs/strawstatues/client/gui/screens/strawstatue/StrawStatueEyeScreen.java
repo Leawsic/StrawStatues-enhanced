@@ -127,18 +127,40 @@ public class StrawStatueEyeScreen extends ArmorStandPositionScreen {
     private void loadFaceColors() {
         StrawStatue statue = (StrawStatue) this.holder.getArmorStand();
         Optional<ResourceLocation> skinLoc = StrawStatueRenderer.getPlayerProfileTexture(statue, MinecraftProfileTexture.Type.SKIN);
-        if (skinLoc.isPresent()) {
-            try {
-                com.mojang.blaze3d.platform.NativeImage img =
-                        StrawStatueRenderer.readSkinNativeImage(skinLoc.get());
-                if (img != null) {
-                    this.faceColors = new int[GRID_CELLS * GRID_CELLS];
-                    int i = 0;
-                    for (int y = 0; y < GRID_CELLS; y++)
-                        for (int x = 0; x < GRID_CELLS; x++)
-                            this.faceColors[i++] = img.getPixelRGBA(8 + x, 8 + y);
-                }
-            } catch (Exception ignored) {}
+        if (skinLoc.isEmpty()) {
+            StrawStatues.LOGGER.warn("StrawStatueEyeScreen: no skin texture found for entity");
+            return;
+        }
+        com.mojang.blaze3d.platform.NativeImage img = null;
+        boolean closeImage = false;
+        try {
+            // Try 1: TextureManager reflection (image owned by TextureManager, don't close)
+            img = StrawStatueRenderer.readSkinNativeImage(skinLoc.get());
+            // Try 2: direct URL download fallback (image owned by us, must close)
+            if (img == null) {
+                StrawStatues.LOGGER.info("StrawStatueEyeScreen: reflection failed, trying URL...");
+                img = StrawStatueRenderer.readSkinFromUrl(statue);
+                closeImage = true;
+            }
+            if (img != null) {
+                this.faceColors = new int[GRID_CELLS * GRID_CELLS];
+                int i = 0;
+                for (int y = 0; y < GRID_CELLS; y++)
+                    for (int x = 0; x < GRID_CELLS; x++) {
+                        int pixel = img.getPixelRGBA(8 + x, 8 + y);
+                        // NativeImage.getPixelRGBA() returns ABGR, GuiGraphics.fill() expects ARGB
+                        this.faceColors[i++] = (pixel & 0xFF00FF00) | ((pixel & 0x00FF0000) >> 16) | ((pixel & 0x000000FF) << 16);
+                    }
+                StrawStatues.LOGGER.info("StrawStatueEyeScreen: loaded {} face colors", i);
+            } else {
+                StrawStatues.LOGGER.warn("StrawStatueEyeScreen: all skin loading approaches failed!");
+            }
+        } catch (Exception e) {
+            StrawStatues.LOGGER.warn("StrawStatueEyeScreen: error loading face colors", e);
+        } finally {
+            if (closeImage && img != null) {
+                img.close();
+            }
         }
     }
 
