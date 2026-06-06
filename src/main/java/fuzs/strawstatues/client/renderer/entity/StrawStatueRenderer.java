@@ -2,6 +2,7 @@ package fuzs.strawstatues.client.renderer.entity;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import fuzs.strawstatues.StrawStatues;
@@ -10,8 +11,8 @@ import fuzs.strawstatues.client.model.StrawStatueArmorModel;
 import fuzs.strawstatues.client.model.StrawStatueModel;
 import fuzs.strawstatues.client.renderer.entity.layers.StrawStatueCapeLayer;
 import fuzs.strawstatues.client.renderer.entity.layers.StrawStatueDeadmau5EarsLayer;
-import fuzs.strawstatues.client.renderer.entity.layers.StrawStatueEyeLayer;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
+import fuzs.strawstatues.world.entity.decoration.StrawStatueEyeData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -21,17 +22,25 @@ import net.minecraft.client.renderer.entity.layers.CustomHeadLayer;
 import net.minecraft.client.renderer.entity.layers.ElytraLayer;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, StrawStatueModel> {
     public static final ResourceLocation STRAW_STATUE_LOCATION = StrawStatues.id("textures/entity/straw_statue.png");
+    private static final int SKIN_FACE_X = 8, SKIN_FACE_Y = 8, FACE_SIZE = 8;
+
+    /** Cache of modified skin textures per entity, regenerated when eye data changes. */
+    private final Map<UUID, ModifiedSkinEntry> modifiedSkinCache = new HashMap<>();
+    private int skinGenCounter;
 
     public StrawStatueRenderer(EntityRendererProvider.Context context) {
         super(context, new StrawStatueModel(context.bakeLayer(ModClientRegistry.STRAW_STATUE), false), 0.0F);
@@ -40,7 +49,6 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
         this.addLayer(new ElytraLayer<>(this, context.getModelSet()));
         this.addLayer(new StrawStatueDeadmau5EarsLayer(this));
         this.addLayer(new StrawStatueCapeLayer(this));
-        this.addLayer(new StrawStatueEyeLayer(this));
         this.addLayer(new CustomHeadLayer<>(this, context.getModelSet(), context.getItemInHandRenderer()));
     }
 
@@ -162,7 +170,148 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
 
     @Override
     public ResourceLocation getTextureLocation(StrawStatue entity) {
-        return getPlayerProfileTexture(entity, MinecraftProfileTexture.Type.SKIN).orElse(STRAW_STATUE_LOCATION);
+        ResourceLocation original = getPlayerProfileTexture(entity, MinecraftProfileTexture.Type.SKIN)
+                .orElse(STRAW_STATUE_LOCATION);
+
+        StrawStatueEyeData eyeData = entity.getEyeData();
+        if (eyeData == null || !eyeData.isValid() || !eyeData.hasOffset()) {
+            return original;
+        }
+
+        // Return cached modified skin if still valid
+        UUID uuid = entity.getUUID();
+        ModifiedSkinEntry cached = modifiedSkinCache.get(uuid);
+        if (cached != null && cached.matches(eyeData)) {
+            return cached.location;
+        }
+
+        // Generate a new modified skin texture with eye changes baked in
+        ResourceLocation modified = bakeEyeIntoTexture(entity, eyeData, original);
+        if (modified != null) {
+            modifiedSkinCache.put(uuid, new ModifiedSkinEntry(modified, eyeData.copy()));
+            return modified;
+        }
+
+        return original;
+    }
+
+    /**
+     * Creates a full copy of the skin texture with face-pixel modifications
+     * applied for the given eye data. Returns a registered DynamicTexture location.
+     */
+    @Nullable
+    private ResourceLocation bakeEyeIntoTexture(StrawStatue entity, StrawStatueEyeData eyeData,
+                                                 ResourceLocation originalSkin) {
+        NativeImage skinImg = null;
+        boolean closeSkin = false;
+        try {
+            skinImg = readSkinNativeImage(originalSkin);
+            if (skinImg == null) {
+                skinImg = readSkinFromUrl(entity);
+                closeSkin = true;
+            }
+            if (skinImg == null) return null;
+
+            // Create a full copy of the skin texture
+            int w = skinImg.getWidth(), h = skinImg.getHeight();
+            NativeImage copy = new NativeImage(w, h, false);
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                    copy.setPixelRGBA(x, y, skinImg.getPixelRGBA(x, y));
+
+            // Apply eye modifications to the face region of the copy
+            applyEyeToSkin(copy, eyeData, true);
+            applyEyeToSkin(copy, eyeData, false);
+
+            DynamicTexture dynTex = new DynamicTexture(copy);
+            ResourceLocation loc = StrawStatues.id("skin_modified/" +
+                    entity.getUUID().toString().replace("-", "") + "_" + (++skinGenCounter));
+            Minecraft.getInstance().getTextureManager().register(loc, dynTex);
+            copy.close();
+            return loc;
+
+        } catch (Exception e) {
+            StrawStatues.LOGGER.warn("Failed to bake eye into skin texture", e);
+            return null;
+        } finally {
+            if (closeSkin && skinImg != null) skinImg.close();
+        }
+    }
+
+    private static void applyEyeToSkin(NativeImage skin, StrawStatueEyeData d, boolean left) {
+        int ex1, ey1, ex2, ey2, px1, py1, px2, py2, dx, dy;
+        if (left) {
+            ex1 = d.leftEyeX1;  ey1 = d.leftEyeY1;  ex2 = d.leftEyeX2;  ey2 = d.leftEyeY2;
+            px1 = d.leftPupilX1; py1 = d.leftPupilY1; px2 = d.leftPupilX2; py2 = d.leftPupilY2;
+            dx  = d.leftPupilDX; dy  = d.leftPupilDY;
+        } else {
+            ex1 = d.rightEyeX1;  ey1 = d.rightEyeY1;  ex2 = d.rightEyeX2;  ey2 = d.rightEyeY2;
+            px1 = d.rightPupilX1; py1 = d.rightPupilY1; px2 = d.rightPupilX2; py2 = d.rightPupilY2;
+            dx  = d.rightPupilDX; dy  = d.rightPupilDY;
+        }
+        if (ex1 < 0 || ey1 < 0 || ex2 < 0 || ey2 < 0) return;
+        if (px1 < 0 || py1 < 0 || px2 < 0 || py2 < 0) return;
+        if (dx == 0 && dy == 0) return;
+
+        // Map to skin texture coordinates (face is at offset SKIN_FACE_X, SKIN_FACE_Y)
+        int sx1 = SKIN_FACE_X + ex1, sy1 = SKIN_FACE_Y + ey1;
+        int sx2 = SKIN_FACE_X + ex2, sy2 = SKIN_FACE_Y + ey2;
+        int spx1 = SKIN_FACE_X + px1, spy1 = SKIN_FACE_Y + py1;
+        int spx2 = SKIN_FACE_X + px2, spy2 = SKIN_FACE_Y + py2;
+
+        // Average eye-white colour from non-pupil pixels inside the eye region
+        int r = 0, g = 0, b = 0, a = 0, cnt = 0;
+        for (int y = sy1; y <= sy2; y++) {
+            for (int x = sx1; x <= sx2; x++) {
+                if (x >= spx1 && x <= spx2 && y >= spy1 && y <= spy2) continue;
+                int c = skin.getPixelRGBA(x, y);
+                r += (c >> 16) & 0xFF; g += (c >> 8) & 0xFF;
+                b += c & 0xFF; a += (c >> 24) & 0xFF;
+                cnt++;
+            }
+        }
+        int fill = cnt > 0
+                ? ((a / cnt) << 24) | ((r / cnt) << 16) | ((g / cnt) << 8) | (b / cnt)
+                : 0xFFFFFFFF;
+
+        // Save pupil pixels, fill original pupil area with eye-white
+        int pw = spx2 - spx1 + 1, ph = spy2 - spy1 + 1;
+        int[] saved = new int[pw * ph];
+        int idx = 0;
+        for (int y = spy1; y <= spy2; y++)
+            for (int x = spx1; x <= spx2; x++)
+                saved[idx++] = skin.getPixelRGBA(x, y);
+
+        for (int y = spy1; y <= spy2; y++)
+            for (int x = spx1; x <= spx2; x++)
+                skin.setPixelRGBA(x, y, fill);
+
+        // Write pupil at offset position (clamped to skin bounds)
+        int maxW = skin.getWidth() - 1, maxH = skin.getHeight() - 1;
+        idx = 0;
+        for (int y = spy1; y <= spy2; y++) {
+            for (int x = spx1; x <= spx2; x++) {
+                int tx = Math.max(0, Math.min(maxW, x + dx));
+                int ty = Math.max(0, Math.min(maxH, y + dy));
+                skin.setPixelRGBA(tx, ty, saved[idx++]);
+            }
+        }
+    }
+
+    // ── Cache entry ─────────────────────────────────────────
+
+    private static class ModifiedSkinEntry {
+        final ResourceLocation location;
+        final StrawStatueEyeData eyeData;
+
+        ModifiedSkinEntry(ResourceLocation location, StrawStatueEyeData eyeData) {
+            this.location = location;
+            this.eyeData = eyeData;
+        }
+
+        boolean matches(StrawStatueEyeData other) {
+            return this.eyeData.equals(other);
+        }
     }
 
     @Override
