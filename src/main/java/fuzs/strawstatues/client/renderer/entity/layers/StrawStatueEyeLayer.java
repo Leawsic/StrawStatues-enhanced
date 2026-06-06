@@ -17,7 +17,6 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
@@ -27,21 +26,28 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Render layer that modifies the face texture based on eye region/pupil data
- * and renders an overlay quad on the head front surface.
+ * Render layer that overlays modified eye pixels onto the head front face.
+ * Uses a single 8×8 modified-face DynamicTexture and renders two small
+ * per-eye quads precisely positioned on the head model's front surface.
+ *
+ * <p>Head model: {@code head.addBox(-4, -8, -4, 8, 8, 8)} —
+ * front face is the 8×8 quad at z=4 with y=[-8,0], x=[-4,4].
+ * Each face-texture pixel (0-7, 0-7) maps to one head-model unit.
  */
 public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueModel> {
 
     private static final int FACE_SIZE = 8;
-    private static final int SKIN_FACE_X = 8; // front face position in 64×64 skin
+    private static final int SKIN_FACE_X = 8;
     private static final int SKIN_FACE_Y = 8;
 
-    // Cached modified face textures keyed by entity UUID
     private final Map<UUID, CachedTexture> textureCache = new HashMap<>();
+    private int textureGenerationCounter;
 
     public StrawStatueEyeLayer(RenderLayerParent<StrawStatue, StrawStatueModel> renderer) {
         super(renderer);
     }
+
+    // ── Render ──────────────────────────────────────────────
 
     @Override
     public void render(PoseStack matrixStack, MultiBufferSource buffer, int packedLight,
@@ -58,34 +64,84 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
 
         matrixStack.pushPose();
 
-        // Match baby model transforms
         if (model.young) {
             matrixStack.translate(0.0, 0.75, 0.0);
             matrixStack.scale(0.5F, 0.5F, 0.5F);
         }
 
-        // Position at the head
+        // Navigate to head-local space (same as model.head rendering)
         model.head.translateAndRotate(matrixStack);
 
-        // Render overlay quad covering the head front face.
-        // PlayerModel head cube: (-4,-8,-4) → (4,0,4), front face at z=4.
-        RenderType renderType = RenderType.entityCutoutNoCull(overlayTexture);
-        VertexConsumer consumer = buffer.getBuffer(renderType);
-        Matrix4f pose = matrixStack.last().pose();
-        Matrix3f normal = matrixStack.last().normal();
-        float z = 4.02F; // slightly in front to avoid z-fighting
-        float top = -8.0F, bottom = 0.0F;
-
-        consumer.vertex(pose, -4.0F, top, z).color(255, 255, 255, 255).uv(0.0F, 0.0F)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight).normal(normal, 0, 0, 1).endVertex();
-        consumer.vertex(pose, 4.0F, top, z).color(255, 255, 255, 255).uv(1.0F, 0.0F)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight).normal(normal, 0, 0, 1).endVertex();
-        consumer.vertex(pose, 4.0F, bottom, z).color(255, 255, 255, 255).uv(1.0F, 1.0F)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight).normal(normal, 0, 0, 1).endVertex();
-        consumer.vertex(pose, -4.0F, bottom, z).color(255, 255, 255, 255).uv(0.0F, 1.0F)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight).normal(normal, 0, 0, 1).endVertex();
+        // Render a small quad per eye, covering only the modified region
+        renderEyeQuad(matrixStack, buffer, packedLight, overlayTexture,
+                eyeData, true);
+        renderEyeQuad(matrixStack, buffer, packedLight, overlayTexture,
+                eyeData, false);
 
         matrixStack.popPose();
+    }
+
+    /**
+     * Renders one eye-overlay quad on the head front face.
+     * The quad covers the eye region expanded by the pupil offset
+     * so that the moved pupil is fully visible.
+     *
+     * <p>Face pixel (fx, fy) → head-local:  x = fx - 4,   y = fy - 8.
+     */
+    private void renderEyeQuad(PoseStack ms, MultiBufferSource buffer, int packedLight,
+                               ResourceLocation overlayTexture, StrawStatueEyeData d, boolean left) {
+
+        int ex1, ey1, ex2, ey2, dx, dy;
+        if (left) {
+            ex1 = d.leftEyeX1;  ey1 = d.leftEyeY1;
+            ex2 = d.leftEyeX2;  ey2 = d.leftEyeY2;
+            dx  = d.leftPupilDX; dy  = d.leftPupilDY;
+        } else {
+            ex1 = d.rightEyeX1;  ey1 = d.rightEyeY1;
+            ex2 = d.rightEyeX2;  ey2 = d.rightEyeY2;
+            dx  = d.rightPupilDX; dy  = d.rightPupilDY;
+        }
+        if (ex1 < 0 || ey1 < 0 || ex2 < 0 || ey2 < 0) return;
+        if (dx == 0 && dy == 0) return;
+
+        // Expand bounding box to cover both original eye region and offset pupil
+        int bx1 = Math.min(ex1, ex1 + dx);
+        int by1 = Math.min(ey1, ey1 + dy);
+        int bx2 = Math.max(ex2, ex2 + dx);
+        int by2 = Math.max(ey2, ey2 + dy);
+        bx1 = Math.max(0, bx1);  bx2 = Math.min(FACE_SIZE - 1, bx2);
+        by1 = Math.max(0, by1);  by2 = Math.min(FACE_SIZE - 1, by2);
+
+        // Map face coordinates → head-local positions
+        float headX1 = bx1 - 4.0F;          // left  edge of pixel bx1
+        float headX2 = bx2 - 3.0F;          // right edge of pixel bx2
+        float headY1 = by1 - 8.0F;          // top   edge of pixel by1
+        float headY2 = by2 - 7.0F;          // bottom edge of pixel by2
+        float z = 4.02F;
+
+        // UV: the 8×8 texture covers [0,1]×[0,1]; each pixel is 1/8
+        float u1 = bx1 / (float) FACE_SIZE;
+        float v1 = by1 / (float) FACE_SIZE;
+        float u2 = (bx2 + 1) / (float) FACE_SIZE;
+        float v2 = (by2 + 1) / (float) FACE_SIZE;
+
+        RenderType renderType = RenderType.entityCutoutNoCull(overlayTexture);
+        VertexConsumer vc = buffer.getBuffer(renderType);
+        Matrix4f pose = ms.last().pose();
+        Matrix3f nml = ms.last().normal();
+
+        vc.vertex(pose, headX1, headY2, z).color(255, 255, 255, 255)
+                .uv(u1, v2).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight)
+                .normal(nml, 0, 0, 1).endVertex();
+        vc.vertex(pose, headX2, headY2, z).color(255, 255, 255, 255)
+                .uv(u2, v2).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight)
+                .normal(nml, 0, 0, 1).endVertex();
+        vc.vertex(pose, headX2, headY1, z).color(255, 255, 255, 255)
+                .uv(u2, v1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight)
+                .normal(nml, 0, 0, 1).endVertex();
+        vc.vertex(pose, headX1, headY1, z).color(255, 255, 255, 255)
+                .uv(u1, v1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(packedLight)
+                .normal(nml, 0, 0, 1).endVertex();
     }
 
     // ── Texture generation with caching ─────────────────────
@@ -93,26 +149,18 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
     private ResourceLocation getOrCreateOverlayTexture(StrawStatue entity, StrawStatueEyeData eyeData) {
         UUID uuid = entity.getUUID();
         CachedTexture cached = textureCache.get(uuid);
-
-        // Check if cache is still valid (same eye data)
         if (cached != null && cached.matches(eyeData)) {
             return cached.location;
         }
-
-        // Try to generate new texture
-        ResourceLocation newTexture = generateOverlayTexture(entity, eyeData, cached != null ? cached.location : null);
+        ResourceLocation newTexture = generateOverlayTexture(entity, eyeData);
         if (newTexture != null) {
             textureCache.put(uuid, new CachedTexture(newTexture, eyeData));
             return newTexture;
         }
-
         return cached != null ? cached.location : null;
     }
 
-    private int textureGenerationCounter;
-
-    private ResourceLocation generateOverlayTexture(StrawStatue entity, StrawStatueEyeData eyeData,
-                                                     @Nullable ResourceLocation oldLocation) {
+    private ResourceLocation generateOverlayTexture(StrawStatue entity, StrawStatueEyeData eyeData) {
         Optional<ResourceLocation> skinLoc = StrawStatueRenderer.getPlayerProfileTexture(
                 entity, MinecraftProfileTexture.Type.SKIN);
         if (skinLoc.isEmpty()) return null;
@@ -121,9 +169,7 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
         boolean closeSkinImg = false;
         try {
             Minecraft mc = Minecraft.getInstance();
-            // Try 1: TextureManager reflection (image owned by TextureManager, don't close)
             skinImg = StrawStatueRenderer.readSkinNativeImage(skinLoc.get());
-            // Try 2: direct URL download fallback (image owned by us, must close)
             if (skinImg == null) {
                 StrawStatues.LOGGER.debug("EyeLayer: reflection failed, trying URL...");
                 skinImg = StrawStatueRenderer.readSkinFromUrl(entity);
@@ -131,18 +177,15 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
             }
             if (skinImg == null) return null;
 
+            // Copy face (8×8) from skin
             NativeImage faceImg = new NativeImage(FACE_SIZE, FACE_SIZE, false);
-
-            // Copy face from skin
             for (int y = 0; y < FACE_SIZE; y++)
                 for (int x = 0; x < FACE_SIZE; x++)
                     faceImg.setPixelRGBA(x, y, skinImg.getPixelRGBA(SKIN_FACE_X + x, SKIN_FACE_Y + y));
 
-            // Apply eye modifications
             applyEye(faceImg, eyeData, true);
             applyEye(faceImg, eyeData, false);
 
-            // Register as dynamic texture with unique counter to avoid race with in-flight render
             DynamicTexture dynamicTexture = new DynamicTexture(faceImg);
             ResourceLocation location = StrawStatues.id("eye_overlay/" +
                     entity.getUUID().toString().replace("-", "") + "_" + (++textureGenerationCounter));
@@ -154,86 +197,69 @@ public class StrawStatueEyeLayer extends RenderLayer<StrawStatue, StrawStatueMod
             StrawStatues.LOGGER.warn("Failed to generate eye overlay texture", e);
             return null;
         } finally {
-            if (closeSkinImg && skinImg != null) {
-                skinImg.close();
-            }
+            if (closeSkinImg && skinImg != null) skinImg.close();
         }
     }
 
     // ── Pixel manipulation ──────────────────────────────────
 
-    private void applyEye(NativeImage faceImg, StrawStatueEyeData eyeData, boolean left) {
+    private void applyEye(NativeImage face, StrawStatueEyeData d, boolean left) {
         int ex1, ey1, ex2, ey2, px1, py1, px2, py2, dx, dy;
         if (left) {
-            ex1 = eyeData.leftEyeX1; ey1 = eyeData.leftEyeY1;
-            ex2 = eyeData.leftEyeX2; ey2 = eyeData.leftEyeY2;
-            px1 = eyeData.leftPupilX1; py1 = eyeData.leftPupilY1;
-            px2 = eyeData.leftPupilX2; py2 = eyeData.leftPupilY2;
-            dx = eyeData.leftPupilDX; dy = eyeData.leftPupilDY;
+            ex1 = d.leftEyeX1;  ey1 = d.leftEyeY1;
+            ex2 = d.leftEyeX2;  ey2 = d.leftEyeY2;
+            px1 = d.leftPupilX1; py1 = d.leftPupilY1;
+            px2 = d.leftPupilX2; py2 = d.leftPupilY2;
+            dx  = d.leftPupilDX; dy  = d.leftPupilDY;
         } else {
-            ex1 = eyeData.rightEyeX1; ey1 = eyeData.rightEyeY1;
-            ex2 = eyeData.rightEyeX2; ey2 = eyeData.rightEyeY2;
-            px1 = eyeData.rightPupilX1; py1 = eyeData.rightPupilY1;
-            px2 = eyeData.rightPupilX2; py2 = eyeData.rightPupilY2;
-            dx = eyeData.rightPupilDX; dy = eyeData.rightPupilDY;
+            ex1 = d.rightEyeX1;  ey1 = d.rightEyeY1;
+            ex2 = d.rightEyeX2;  ey2 = d.rightEyeY2;
+            px1 = d.rightPupilX1; py1 = d.rightPupilY1;
+            px2 = d.rightPupilX2; py2 = d.rightPupilY2;
+            dx  = d.rightPupilDX; dy  = d.rightPupilDY;
         }
-
         if (ex1 < 0 || ey1 < 0 || ex2 < 0 || ey2 < 0) return;
         if (px1 < 0 || py1 < 0 || px2 < 0 || py2 < 0) return;
         if (dx == 0 && dy == 0) return;
 
-        // 1. Find eye-white color: average of non-pupil pixels within eye region
-        int[] whiteColor = new int[4]; // RGBA accumulator
-        int whiteCount = 0;
+        // Average eye-white colour (non-pupil pixels inside the eye region)
+        int r = 0, g = 0, b = 0, a = 0, cnt = 0;
         for (int y = ey1; y <= ey2; y++) {
             for (int x = ex1; x <= ex2; x++) {
-                if (isInPupil(x, y, px1, py1, px2, py2)) continue;
-                int c = faceImg.getPixelRGBA(x, y);
-                whiteColor[0] += (c >> 16) & 0xFF;
-                whiteColor[1] += (c >> 8) & 0xFF;
-                whiteColor[2] += c & 0xFF;
-                whiteColor[3] += (c >> 24) & 0xFF;
-                whiteCount++;
+                if (x >= px1 && x <= px2 && y >= py1 && y <= py2) continue;
+                int c = face.getPixelRGBA(x, y);
+                r += (c >> 16) & 0xFF;
+                g += (c >> 8)  & 0xFF;
+                b += c         & 0xFF;
+                a += (c >> 24) & 0xFF;
+                cnt++;
             }
         }
+        int fill = cnt > 0
+                ? ((a / cnt) << 24) | ((r / cnt) << 16) | ((g / cnt) << 8) | (b / cnt)
+                : 0xFFFFFFFF;
 
-        int fillColor;
-        if (whiteCount > 0) {
-            fillColor = ((whiteColor[3] / whiteCount) << 24)
-                    | ((whiteColor[0] / whiteCount) << 16)
-                    | ((whiteColor[1] / whiteCount) << 8)
-                    | (whiteColor[2] / whiteCount);
-        } else {
-            fillColor = 0xFFFFFFFF; // fallback white
-        }
-
-        // 2. Save pupil pixels, then fill original pupil area with eye-white color
-        int pupilW = px2 - px1 + 1;
-        int pupilH = py2 - py1 + 1;
-        int[] savedPupil = new int[pupilW * pupilH];
+        // Save pupil pixels, fill original pupil area with eye-white
+        int pw = px2 - px1 + 1, ph = py2 - py1 + 1;
+        int[] saved = new int[pw * ph];
         int idx = 0;
-        for (int y = py1; y <= py2; y++) {
-            for (int x = px1; x <= px2; x++) {
-                savedPupil[idx++] = faceImg.getPixelRGBA(x, y);
-                faceImg.setPixelRGBA(x, y, fillColor);
-            }
-        }
+        for (int y = py1; y <= py2; y++)
+            for (int x = px1; x <= px2; x++)
+                saved[idx++] = face.getPixelRGBA(x, y);
 
-        // 3. Write saved pupil pixels at offset position (clamped)
+        for (int y = py1; y <= py2; y++)
+            for (int x = px1; x <= px2; x++)
+                face.setPixelRGBA(x, y, fill);
+
+        // Write pupil at offset position (clamped to face bounds)
         idx = 0;
         for (int y = py1; y <= py2; y++) {
             for (int x = px1; x <= px2; x++) {
-                int tx = x + dx;
-                int ty = y + dy;
-                tx = Math.max(0, Math.min(FACE_SIZE - 1, tx));
-                ty = Math.max(0, Math.min(FACE_SIZE - 1, ty));
-                faceImg.setPixelRGBA(tx, ty, savedPupil[idx++]);
+                int tx = Math.max(0, Math.min(FACE_SIZE - 1, x + dx));
+                int ty = Math.max(0, Math.min(FACE_SIZE - 1, y + dy));
+                face.setPixelRGBA(tx, ty, saved[idx++]);
             }
         }
-    }
-
-    private static boolean isInPupil(int x, int y, int px1, int py1, int px2, int py2) {
-        return x >= px1 && x <= px2 && y >= py1 && y <= py2;
     }
 
     // ── Cache entry ─────────────────────────────────────────
