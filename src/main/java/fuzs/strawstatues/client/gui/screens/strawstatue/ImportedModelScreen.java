@@ -64,34 +64,37 @@ public class ImportedModelScreen extends ArmorStandPositionScreen {
         this.addRenderableWidget(this.modelList);
         this.modelList.updateEntries();
 
+        int btnW = 48;
+        int btnH = 20;
+        int gap = 4;
+        int btnY = this.topPos + this.imageHeight - 28;
+        int startX = this.leftPos + 8;
+
         // Select button
         this.selectButton = this.addRenderableWidget(
                 Button.builder(Component.translatable(StrawStatues.MOD_ID + ".screen.importedModel.select"),
                                 btn -> selectCurrentModel())
-                        .pos(this.leftPos + 8, this.topPos + this.imageHeight - 28)
-                        .size(60, 20).build());
+                        .pos(startX, btnY).size(btnW, btnH).build());
         this.selectButton.active = false;
 
         // Delete button
         this.deleteButton = this.addRenderableWidget(
                 Button.builder(Component.translatable(StrawStatues.MOD_ID + ".screen.importedModel.delete"),
                                 btn -> deleteSelectedModel())
-                        .pos(this.leftPos + 74, this.topPos + this.imageHeight - 28)
-                        .size(60, 20).build());
+                        .pos(startX + (btnW + gap), btnY).size(btnW, btnH).build());
         this.deleteButton.active = false;
 
         // Reload button
         this.reloadButton = this.addRenderableWidget(
                 Button.builder(Component.translatable(StrawStatues.MOD_ID + ".screen.importedModel.reload"),
                                 btn -> reloadModels())
-                        .pos(this.leftPos + 140, this.topPos + this.imageHeight - 28)
-                        .size(60, 20).build());
+                        .pos(startX + (btnW + gap) * 2, btnY).size(btnW, btnH).build());
 
         // Done button
         this.addRenderableWidget(
                 Button.builder(CommonComponents.GUI_DONE, btn -> this.onClose())
-                        .pos(this.leftPos + this.imageWidth - 68, this.topPos + this.imageHeight - 28)
-                        .size(60, 20).build());
+                        .pos(this.leftPos + this.imageWidth - 8 - btnW, btnY)
+                        .size(btnW, btnH).build());
 
         this.selectedModelId = null;
     }
@@ -140,6 +143,13 @@ public class ImportedModelScreen extends ArmorStandPositionScreen {
     private void reloadModels() {
         ImportedModelRegistry.reload();
         this.modelList.updateEntries();
+    }
+
+    // ── Prevent container background rendering ──────────────
+
+    @Override
+    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+        // Empty — parent class renders a container-style background that we don't want
     }
 
     // ── Drag & Drop ─────────────────────────────────────────

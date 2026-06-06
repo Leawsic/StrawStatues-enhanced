@@ -32,9 +32,11 @@ public final class ImportedModelRegistry {
     private static final String NAMESPACE = "strawstatues_imported";
     private static final Path CONFIG_DIR = Path.of("config", StrawStatues.MOD_ID, "imported_models");
 
-    private static final Map<String, ModelEntry> REGISTRY = new ConcurrentHashMap<>();
+    // Built-in placeholder model resource locations (always available)
+    public static final ResourceLocation DEFAULT_MODEL_LOC = new ResourceLocation(NAMESPACE, "geo/default.geo.json");
+    public static final ResourceLocation DEFAULT_TEXTURE_LOC = new ResourceLocation(NAMESPACE, "textures/entity/default.png");
 
-    // Gson instance matching GeckoLib's setup (used for animation loading)
+    private static final Map<String, ModelEntry> REGISTRY = new ConcurrentHashMap<>();
     private static final Gson GEO_GSON = JsonUtil.GEO_GSON;
 
     private ImportedModelRegistry() {}
@@ -55,33 +57,31 @@ public final class ImportedModelRegistry {
 
     // ── Public API ─────────────────────────────────────────
 
-    /**
-     * Get all available model IDs
-     */
     public static Set<String> getAvailableModelIds() {
         return REGISTRY.keySet();
     }
 
-    /**
-     * Check if a model is loaded by ID
-     */
     public static boolean isModelLoaded(String modelId) {
         return REGISTRY.containsKey(modelId);
     }
 
-    /**
-     * Get a model entry by ID
-     */
     public static Optional<ModelEntry> getModel(String modelId) {
         return Optional.ofNullable(REGISTRY.get(modelId));
     }
 
-    // ── Scanning & Loading ─────────────────────────────────
+    // ── Initialisation ──────────────────────────────────────
 
     /**
-     * Scan the config directory for model directories and load each model.
-     * Called during client setup and after importing a new model.
+     * Register the built-in default model (always available).
+     * Called once during client setup.
      */
+    public static void registerDefaultModel() {
+        registerDefaultModelNow(DEFAULT_MODEL_LOC);
+        StrawStatues.LOGGER.info("Registered default placeholder model");
+    }
+
+    // ── Scanning & Loading ─────────────────────────────────
+
     public static void scanAndLoad() {
         try {
             Files.createDirectories(CONFIG_DIR);
@@ -105,10 +105,6 @@ public final class ImportedModelRegistry {
         StrawStatues.LOGGER.info("Loaded {} imported models", REGISTRY.size());
     }
 
-    /**
-     * Load a single model from a directory, parse geo.json + png,
-     * inject into GeckoLib cache, register texture.
-     */
     private static void loadModelFromDir(String modelId, Path dir) {
         Path geoJson = dir.resolve("model.geo.json");
         Path texture = dir.resolve("texture.png");
@@ -124,13 +120,9 @@ public final class ImportedModelRegistry {
         ResourceLocation animLoc = new ResourceLocation(NAMESPACE, "animations/" + modelId + ".animation.json");
 
         try {
-            // 1. Parse geo.json → BakedGeoModel → inject into GeckoLib cache
             injectGeoModel(geoJson, modelLoc);
-
-            // 2. Register texture in TextureManager
             registerTexture(texture, texLoc);
 
-            // 3. Load animation (optional)
             Optional<Path> animPath = Files.exists(animation) ? Optional.of(animation) : Optional.empty();
             if (animPath.isPresent()) {
                 injectAnimation(animation, animLoc);
@@ -144,16 +136,14 @@ public final class ImportedModelRegistry {
         }
     }
 
-    // ── GeoJSON injection into GeckoLibCache ───────────────
+    // ── GeoJSON injection ──────────────────────────────────
 
     private static void injectGeoModel(Path geoJsonPath, ResourceLocation location) throws IOException {
         String content = Files.readString(geoJsonPath, Charset.defaultCharset());
         JsonObject jsonObj = net.minecraft.util.GsonHelper.fromJson(GEO_GSON, content, JsonObject.class);
         Model model = GEO_GSON.fromJson(jsonObj, Model.class);
-
         GeometryTree geometryTree = GeometryTree.fromModel(model);
         var bakedModel = BakedModelFactory.DEFAULT_FACTORY.constructGeoModel(geometryTree);
-
         GeckoLibCache.getBakedModels().put(location, bakedModel);
     }
 
@@ -161,7 +151,6 @@ public final class ImportedModelRegistry {
         String content = Files.readString(animPath, Charset.defaultCharset());
         JsonObject jsonObj = net.minecraft.util.GsonHelper.fromJson(GEO_GSON, content, JsonObject.class);
         BakedAnimations bakedAnimations = GEO_GSON.fromJson(jsonObj, BakedAnimations.class);
-
         GeckoLibCache.getBakedAnimations().put(location, bakedAnimations);
     }
 
@@ -175,25 +164,46 @@ public final class ImportedModelRegistry {
         }
     }
 
-    // ─── Config helpers ─────────────────────────────────────
+    /**
+     * Re-register the default model at a given location (called when GeckoLib cache is cleared by reload).
+     */
+    public static void registerDefaultModelNow(ResourceLocation location) {
+        String defaultGeo = """
+                {"format_version":"1.12.0","minecraft:geometry":[{"description":{"identifier":"geometry.default","texture_width":64,"texture_height":64,"visible_bounds_offset":[0,0,0],"visible_bounds_width":2,"visible_bounds_height":2},"bones":[{"name":"body","pivot":[0,0,0],"cubes":[{"origin":[-8,0,-8],"size":[16,16,16],"uv":[0,0]}]}]}]}""";
+        try {
+            JsonObject jsonObj = net.minecraft.util.GsonHelper.fromJson(GEO_GSON, defaultGeo, JsonObject.class);
+            Model model = GEO_GSON.fromJson(jsonObj, Model.class);
+            GeometryTree tree = GeometryTree.fromModel(model);
+            var bakedModel = BakedModelFactory.DEFAULT_FACTORY.constructGeoModel(tree);
+            GeckoLibCache.getBakedModels().put(location, bakedModel);
+        } catch (Exception ignored) {}
+    }
 
     /**
-     * Copies model files from a temporary directory (extracted from zip) to the config directory.
+     * Reload a single model by ID (re-injects into GeckoLib cache).
      */
+    public static void reloadSingle(String modelId) {
+        var entry = REGISTRY.get(modelId);
+        if (entry == null) return;
+        try {
+            injectGeoModel(entry.geoJsonPath(), entry.modelLocation());
+            if (entry.hasAnimation()) {
+                injectAnimation(entry.animationPath().get(), entry.animationLocation());
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // ── Config helpers ─────────────────────────────────────
+
     public static Path getModelDir(String modelId) {
         return CONFIG_DIR.resolve(modelId);
     }
 
-    /**
-     * Trigger a full reload after importing a new model.
-     */
     public static void reload() {
-        // Reset GeckoLib cache for our namespace - remove old entries
         GeckoLibCache.getBakedModels().keySet()
-                .removeIf(key -> key.getNamespace().equals(NAMESPACE));
+                .removeIf(key -> key.getNamespace().equals(NAMESPACE) && !key.equals(DEFAULT_MODEL_LOC));
         GeckoLibCache.getBakedAnimations().keySet()
                 .removeIf(key -> key.getNamespace().equals(NAMESPACE));
-
         scanAndLoad();
     }
 }

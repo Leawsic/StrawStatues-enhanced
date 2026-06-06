@@ -42,7 +42,8 @@ public class StrawStatuesClient implements ClientModConstructor {
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_SCALE_SCREEN_TYPE, StrawStatueScaleScreen::new);
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_IMPORTED_MODEL_SCREEN_TYPE, ImportedModelScreen::new);
 
-        // Scan for imported models
+        // Register built-in default model + scan for imported models
+        ImportedModelRegistry.registerDefaultModel();
         ImportedModelRegistry.scanAndLoad();
         ArmorStandRotationsScreen.registerPosePartMutatorFilter(ModRegistry.CAPE_POSE_PART_MUTATOR, armorStand -> {
             StrawStatue strawStatue = (StrawStatue) armorStand;
