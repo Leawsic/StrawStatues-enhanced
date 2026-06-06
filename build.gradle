@@ -20,6 +20,15 @@ repositories {
         name = "Ladysnake"
         url = "https://maven.ladysnake.org/releases"
     }
+    maven {
+        name = 'GeckoLib'
+        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content {
+            includeGroupByRegex("software\\.bernie.*")
+            includeGroup("com.eliotlash.mclib")
+        }
+    }
+    maven { url "https://maven.tomalbrc.de" }
 }
 
 dependencies {
@@ -31,13 +40,21 @@ dependencies {
     // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
+    // puzzles lib
     modApi files("libs/PuzzlesLib-v8.1.32-1.20.1-Fabric.jar")
+    // puzzles api
     include(modImplementation("fuzs.puzzlesapi:puzzlesapi-fabric:8.1.7") {
         exclude group: "fuzs.puzzleslib"
     })
+    // forge config api port
     modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:8.0.3") {
         transitive = false
     }
+    // geckolib
+    modImplementation("software.bernie.geckolib:geckolib-fabric-${minecraft_version}:${geckolib_version}")
+    implementation("com.eliotlash.mclib:mclib:20")
+    // blockbench import library (disabled for now, re-enable when needed)
+    //modImplementation include(files("libs/blockbench-import-library-1.1.12+1.20.1.jar"))
 }
 
 processResources {

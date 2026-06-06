@@ -1,6 +1,9 @@
 {
   "entity.strawstatues.straw_statue": "Straw Statue",
   "item.strawstatues.straw_statue": "Straw Statue",
+  "entity.strawstatues.imported_straw_statue": "Imported Straw Statue",
+  "item.strawstatues.imported_straw_statue": "Imported Straw Statue",
+  "puzzlesapi.screen.type.importedModel": "Imported Model",
   "puzzlesapi.screen.rotations.pose.cape": "Cape",
   "puzzlesapi.screen.style.crouching": "Crouching",
   "puzzlesapi.screen.style.crouching.description": "Makes the statue show as if it were crouching.",
@@ -20,5 +23,10 @@
   "strawstatues.screen.position.rotationX": "X-Rotation:",
   "strawstatues.screen.position.rotationY": "Y-Rotation:",
   "strawstatues.screen.position.rotationZ": "Z-Rotation:",
-  "strawstatues.screen.position.scale": "Scale:"
+  "strawstatues.screen.position.scale": "Scale:",
+  "strawstatues.screen.importedModel.title": "Imported Models",
+  "strawstatues.screen.importedModel.select": "Select",
+  "strawstatues.screen.importedModel.delete": "Delete",
+  "strawstatues.screen.importedModel.reload": "Reload",
+  "strawstatues.screen.importedModel.dropHint": "Drag .zip files here to import"
 }

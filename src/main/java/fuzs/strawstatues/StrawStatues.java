@@ -14,6 +14,8 @@ import fuzs.strawstatues.network.client.C2SStrawStatueModelPartMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueOwnerMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueEyeMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueScaleMessage;
+import fuzs.strawstatues.network.client.C2SImportedStrawStatueMessage;
+import fuzs.strawstatues.world.entity.decoration.ImportedStrawStatue;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.BlockSource;
@@ -50,11 +52,14 @@ public class StrawStatues implements ModConstructor {
         NETWORK.register(C2SStrawStatueOwnerMessage.class, C2SStrawStatueOwnerMessage::new, MessageDirection.TO_SERVER);
         NETWORK.register(C2SStrawStatueScaleMessage.class, C2SStrawStatueScaleMessage::new, MessageDirection.TO_SERVER);
         NETWORK.register(C2SStrawStatueEyeMessage.class, C2SStrawStatueEyeMessage::new, MessageDirection.TO_SERVER);
+        NETWORK.register(C2SImportedStrawStatueMessage.class, C2SImportedStrawStatueMessage::new, MessageDirection.TO_SERVER);
     }
 
     private static void registerHandlers() {
         // high priority so we run before the Quark mod
         PlayerInteractEvents.USE_ENTITY_AT.register(EventPhase.BEFORE, StrawStatue::onUseEntityAt);
+        // imported statue interaction
+        PlayerInteractEvents.USE_ENTITY_AT.register(EventPhase.BEFORE, ImportedStrawStatue::onUseEntityAt);
     }
 
     @Override
@@ -77,17 +82,40 @@ public class StrawStatues implements ModConstructor {
                 return stack;
             }
         });
+        DispenserBlock.registerBehavior(ModRegistry.IMPORTED_STRAW_STATUE_ITEM.get(), new DefaultDispenseItemBehavior() {
+
+            @Override
+            public @NotNull ItemStack execute(BlockSource blockSource, ItemStack stack) {
+                Direction direction = blockSource.getBlockState().getValue(DispenserBlock.FACING);
+                BlockPos blockpos = blockSource.getPos().relative(direction);
+                Level level = blockSource.getLevel();
+                ArmorStand armorstand = new ImportedStrawStatue(level, blockpos.getX() + 0.5, blockpos.getY(), blockpos.getZ() + 0.5);
+                EntityType.updateCustomEntityTag(level, null, armorstand, stack.getTag());
+                armorstand.setYRot(direction.toYRot());
+                ArmorStandPose.randomValue().applyToEntity(armorstand);
+                level.addFreshEntity(armorstand);
+                stack.shrink(1);
+                return stack;
+            }
+        });
     }
 
     @Override
     public void onEntityAttributeCreation(EntityAttributesCreateContext context) {
         context.registerEntityAttributes(ModRegistry.STRAW_STATUE_ENTITY_TYPE.get(), LivingEntity.createLivingAttributes());
+        context.registerEntityAttributes(ModRegistry.IMPORTED_STRAW_STATUE_ENTITY_TYPE.get(), LivingEntity.createLivingAttributes());
     }
 
     @Override
     public void onBuildCreativeModeTabContents(BuildCreativeModeTabContentsContext context) {
-        context.registerBuildListener(CreativeModeTabs.FUNCTIONAL_BLOCKS, (itemDisplayParameters, output) -> output.accept(ModRegistry.STRAW_STATUE_ITEM.get()));
-        context.registerBuildListener(CreativeModeTabs.REDSTONE_BLOCKS, (itemDisplayParameters, output) -> output.accept(ModRegistry.STRAW_STATUE_ITEM.get()));
+        context.registerBuildListener(CreativeModeTabs.FUNCTIONAL_BLOCKS, (itemDisplayParameters, output) -> {
+            output.accept(ModRegistry.STRAW_STATUE_ITEM.get());
+            output.accept(ModRegistry.IMPORTED_STRAW_STATUE_ITEM.get());
+        });
+        context.registerBuildListener(CreativeModeTabs.REDSTONE_BLOCKS, (itemDisplayParameters, output) -> {
+            output.accept(ModRegistry.STRAW_STATUE_ITEM.get());
+            output.accept(ModRegistry.IMPORTED_STRAW_STATUE_ITEM.get());
+        });
     }
 
     public static ResourceLocation id(String path) {

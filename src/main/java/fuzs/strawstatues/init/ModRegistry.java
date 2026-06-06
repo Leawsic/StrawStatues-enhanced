@@ -10,7 +10,9 @@ import fuzs.puzzleslib.api.core.v1.ModLoaderEnvironment;
 import fuzs.puzzleslib.api.init.v2.RegistryManager;
 import fuzs.puzzleslib.api.init.v2.RegistryReference;
 import fuzs.strawstatues.StrawStatues;
+import fuzs.strawstatues.world.entity.decoration.ImportedStrawStatue;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
+import fuzs.strawstatues.world.item.ImportedStrawStatueItem;
 import fuzs.strawstatues.world.item.StrawStatueItem;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
@@ -39,6 +41,13 @@ public class ModRegistry {
     public static final ArmorStandScreenType STRAW_STATUE_EYE_SCREEN_TYPE = new ArmorStandScreenType("eyes", new ItemStack(Items.ENDER_EYE));
     public static final ArmorStandScreenType STRAW_STATUE_POSITION_SCREEN_TYPE = new ArmorStandScreenType("position", new ItemStack(Items.GRASS_BLOCK));
     public static final ArmorStandScreenType STRAW_STATUE_SCALE_SCREEN_TYPE = new ArmorStandScreenType("scale", new ItemStack(Items.HAY_BLOCK));
+    public static final ArmorStandScreenType STRAW_STATUE_IMPORTED_MODEL_SCREEN_TYPE = new ArmorStandScreenType("importedModel", new ItemStack(Items.COMMAND_BLOCK_MINECART));
+
+    // Imported model statue
+    public static final RegistryReference<Item> IMPORTED_STRAW_STATUE_ITEM = REGISTRY.registerItem("imported_straw_statue", () -> new ImportedStrawStatueItem(new Item.Properties().stacksTo(16)));
+    public static final RegistryReference<EntityType<ImportedStrawStatue>> IMPORTED_STRAW_STATUE_ENTITY_TYPE = REGISTRY.registerEntityType("imported_straw_statue", () -> EntityType.Builder.of((EntityType<ImportedStrawStatue> entityType, Level level) -> new ImportedStrawStatue(entityType, level), MobCategory.MISC).sized(0.6F, 1.8F).clientTrackingRange(10));
+    public static final RegistryReference<MenuType<ArmorStandMenu>> IMPORTED_STRAW_STATUE_MENU_TYPE = REGISTRY.registerExtendedMenuType("imported_straw_statue", () -> (containerId, inventory, data) -> ArmorStandMenu.create(ModRegistry.IMPORTED_STRAW_STATUE_MENU_TYPE.get(), containerId, inventory, data, null));
+
     public static final ArmorStandStyleOption SLIM_ARMS_STYLE_OPTION = new ArmorStandStyleOption() {
 
         @Override

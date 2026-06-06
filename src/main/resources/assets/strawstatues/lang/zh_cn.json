@@ -1,6 +1,9 @@
 {
   "entity.strawstatues.straw_statue": "稻草人雕像",
   "item.strawstatues.straw_statue": "稻草人雕像",
+  "entity.strawstatues.imported_straw_statue": "导入模型雕像",
+  "item.strawstatues.imported_straw_statue": "导入模型雕像",
+  "puzzlesapi.screen.type.importedModel": "导入模型",
   "puzzlesapi.screen.rotations.pose.cape": "披风",
   "puzzlesapi.screen.style.crouching": "潜行",
   "puzzlesapi.screen.style.crouching.description": "使雕像显示为潜行姿态。",
@@ -20,5 +23,10 @@
   "strawstatues.screen.position.rotationX": "X轴旋转:",
   "strawstatues.screen.position.rotationY": "Y轴旋转:",
   "strawstatues.screen.position.rotationZ": "Z轴旋转:",
-  "strawstatues.screen.position.scale": "缩放:"
+  "strawstatues.screen.position.scale": "缩放:",
+  "strawstatues.screen.importedModel.title": "导入模型管理",
+  "strawstatues.screen.importedModel.select": "选择",
+  "strawstatues.screen.importedModel.delete": "删除",
+  "strawstatues.screen.importedModel.reload": "重新加载",
+  "strawstatues.screen.importedModel.dropHint": "将 .zip 文件拖放到此处以导入"
 }
