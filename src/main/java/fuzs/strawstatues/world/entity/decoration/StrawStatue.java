@@ -62,6 +62,7 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     public static final EntityDataAccessor<Byte> DATA_PLAYER_MODE_CUSTOMISATION = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.BYTE);
     public static final EntityDataAccessor<Float> DATA_ENTITY_SCALE = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.FLOAT);
     public static final EntityDataAccessor<Rotations> DATA_ENTITY_ROTATIONS = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.ROTATIONS);
+    public static final EntityDataAccessor<CompoundTag> DATA_EYE_DATA = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.COMPOUND_TAG);
 
     private final NavigableMap<Float, EntityDimensions> defaultDimensions;
     private final NavigableMap<Float, EntityDimensions> babyDimensions;
@@ -102,6 +103,7 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
         this.entityData.define(DATA_PLAYER_MODE_CUSTOMISATION, getAllModelParts());
         this.entityData.define(DATA_ENTITY_SCALE, DEFAULT_ENTITY_SCALE);
         this.entityData.define(DATA_ENTITY_ROTATIONS, DEFAULT_ENTITY_ROTATIONS);
+        this.entityData.define(DATA_EYE_DATA, new CompoundTag());
     }
 
     private static byte getAllModelParts() {
@@ -158,7 +160,9 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
             this.entityRotationsO = this.getEntityRotations();
         }
         if (tag.contains(EYE_DATA_KEY, Tag.TAG_COMPOUND)) {
-            this.eyeData = StrawStatueEyeData.fromTag(tag.getCompound(EYE_DATA_KEY));
+            CompoundTag eyeTag = tag.getCompound(EYE_DATA_KEY);
+            this.eyeData = StrawStatueEyeData.fromTag(eyeTag);
+            this.entityData.set(DATA_EYE_DATA, eyeTag);
         }
     }
 
@@ -178,6 +182,14 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
         if (DATA_ENTITY_SCALE.equals(key)) {
             this.refreshDimensions();
+        }
+        if (DATA_EYE_DATA.equals(key)) {
+            CompoundTag tag = this.entityData.get(DATA_EYE_DATA);
+            if (!tag.isEmpty()) {
+                this.eyeData = StrawStatueEyeData.fromTag(tag);
+            } else {
+                this.eyeData = null;
+            }
         }
         super.onSyncedDataUpdated(key);
     }
@@ -305,6 +317,11 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
 
     public void setEyeData(@Nullable StrawStatueEyeData eyeData) {
         this.eyeData = eyeData;
+        if (eyeData != null && eyeData.isValid()) {
+            this.entityData.set(DATA_EYE_DATA, eyeData.toTag());
+        } else {
+            this.entityData.set(DATA_EYE_DATA, new CompoundTag());
+        }
     }
 
     @Override
