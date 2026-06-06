@@ -33,9 +33,9 @@ dependencies {
 
     //modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:<modVersion>"
     modApi files("libs/PuzzlesLib-v8.1.32-1.20.1-Fabric.jar")
-    modImplementation("fuzs.puzzlesapi:puzzlesapi-fabric:8.1.7") {
+    include(modImplementation("fuzs.puzzlesapi:puzzlesapi-fabric:8.1.7") {
         exclude group: "fuzs.puzzleslib"
-    }
+    })
     modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:8.0.3") {
         transitive = false
     }
