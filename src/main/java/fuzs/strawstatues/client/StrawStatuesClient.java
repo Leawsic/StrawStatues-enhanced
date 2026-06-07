@@ -9,6 +9,7 @@ import fuzs.puzzleslib.api.client.core.v1.ClientModConstructor;
 import fuzs.puzzleslib.api.client.core.v1.context.EntityRenderersContext;
 import fuzs.puzzleslib.api.client.core.v1.context.LayerDefinitionsContext;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueEyeScreen;
+import fuzs.strawstatues.StrawStatues;
 import fuzs.strawstatues.client.command.ImportedModelCommands;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueModelPartsScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatuePositionScreen;
@@ -42,9 +43,29 @@ public class StrawStatuesClient implements ClientModConstructor {
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_EYE_SCREEN_TYPE, StrawStatueEyeScreen::new);
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_SCALE_SCREEN_TYPE, StrawStatueScaleScreen::new);
 
-        // Register built-in default model + scan for imported models
+        // Register built-in default model. Scan is deferred to after
+        // GeckoLib's resource reload to avoid cache wipe issues.
         ImportedModelRegistry.registerDefaultModel();
-        ImportedModelRegistry.scanAndLoad();
+        // Register a resource reload listener to scan after GeckoLib is ready
+        net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.CLIENT_RESOURCES)
+                .registerReloadListener(new net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener() {
+                    @Override
+                    public net.minecraft.resources.ResourceLocation getFabricId() {
+                        return StrawStatues.id("imported_models");
+                    }
+                    @Override
+                    public java.util.concurrent.CompletableFuture<Void> reload(
+                            net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener.PreparationBarrier barrier,
+                            net.minecraft.server.packs.resources.ResourceManager manager,
+                            net.minecraft.util.profiling.ProfilerFiller prepareProfiler,
+                            net.minecraft.util.profiling.ProfilerFiller applyProfiler,
+                            java.util.concurrent.Executor backgroundExecutor,
+                            java.util.concurrent.Executor gameExecutor) {
+                        return java.util.concurrent.CompletableFuture.allOf()
+                                .thenCompose(barrier::wait)
+                                .thenAcceptAsync(v -> ImportedModelRegistry.scanAndLoad(), gameExecutor);
+                    }
+                });
         // Register /strawstatues import ... commands
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, ctx) -> ImportedModelCommands.register());
         ArmorStandRotationsScreen.registerPosePartMutatorFilter(ModRegistry.CAPE_POSE_PART_MUTATOR, armorStand -> {

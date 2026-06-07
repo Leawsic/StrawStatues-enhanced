@@ -142,7 +142,7 @@ public final class ImportedModelRegistry {
         try {
             injectGeoModel(geoJson, modelLoc);
         } catch (Exception e) {
-            StrawStatues.LOGGER.warn("Failed to load geo.json for '{}': {}", modelId, e.getMessage());
+            StrawStatues.LOGGER.warn("Failed to load geo.json for '{}': {}", modelId, e.toString());
             return;
         }
         // Try to register texture (required)
