@@ -15,7 +15,7 @@ import software.bernie.geckolib.loading.object.GeometryTree;
 import software.bernie.geckolib.util.JsonUtil;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -133,32 +133,45 @@ public final class ImportedModelRegistry {
             return;
         }
 
-        ResourceLocation modelLoc = new ResourceLocation(NAMESPACE, "geo/" + modelId + ".geo.json");
-        ResourceLocation texLoc = new ResourceLocation(NAMESPACE, "textures/entity/" + modelId + ".png");
-        ResourceLocation animLoc = new ResourceLocation(NAMESPACE, "animations/" + modelId + ".animation.json");
+        String safeId = modelId.toLowerCase(Locale.ROOT);
+        ResourceLocation modelLoc = new ResourceLocation(NAMESPACE, "geo/" + safeId + ".geo.json");
+        ResourceLocation texLoc = new ResourceLocation(NAMESPACE, "textures/entity/" + safeId + ".png");
+        ResourceLocation animLoc = new ResourceLocation(NAMESPACE, "animations/" + safeId + ".animation.json");
 
+        // Try to parse geo.json (required)
         try {
             injectGeoModel(geoJson, modelLoc);
-            registerTexture(texture, texLoc);
-
-            Optional<Path> animPath = animation != null && Files.exists(animation) ? Optional.of(animation) : Optional.empty();
-            if (animPath.isPresent()) {
-                injectAnimation(animation, animLoc);
-            }
-
-            REGISTRY.put(modelId, new ModelEntry(modelId, geoJson, texture, animPath, modelLoc, texLoc, animLoc));
-            StrawStatues.LOGGER.info("Loaded imported model: {} (geo: {}, tex: {})", modelId,
-                    geoJson.getFileName(), texture.getFileName());
-
         } catch (Exception e) {
-            StrawStatues.LOGGER.warn("Failed to load imported model '{}': {}", modelId, e.getMessage());
+            StrawStatues.LOGGER.warn("Failed to load geo.json for '{}': {}", modelId, e.getMessage());
+            return;
         }
+        // Try to register texture (required)
+        try {
+            registerTexture(texture, texLoc);
+        } catch (Exception e) {
+            StrawStatues.LOGGER.warn("Failed to load texture for '{}': {}", modelId, e.getMessage());
+            return;
+        }
+        // Try to load animation (optional, failure is non-fatal)
+        Optional<Path> animPath = Optional.empty();
+        if (animation != null && Files.exists(animation)) {
+            try {
+                injectAnimation(animation, animLoc);
+                animPath = Optional.of(animation);
+            } catch (Exception e) {
+                StrawStatues.LOGGER.debug("Skipping animation for '{}': {}", modelId, e.getMessage());
+            }
+        }
+
+        REGISTRY.put(modelId, new ModelEntry(modelId, geoJson, texture, animPath, modelLoc, texLoc, animLoc));
+        StrawStatues.LOGGER.info("Loaded imported model: {} (geo: {}, tex: {})", modelId,
+                geoJson.getFileName(), texture.getFileName());
     }
 
     // ── GeoJSON injection ──────────────────────────────────
 
     private static void injectGeoModel(Path geoJsonPath, ResourceLocation location) throws IOException {
-        String content = Files.readString(geoJsonPath, Charset.defaultCharset());
+        String content = Files.readString(geoJsonPath, StandardCharsets.UTF_8);
         JsonObject jsonObj = net.minecraft.util.GsonHelper.fromJson(GEO_GSON, content, JsonObject.class);
         Model model = GEO_GSON.fromJson(jsonObj, Model.class);
         GeometryTree geometryTree = GeometryTree.fromModel(model);
@@ -167,7 +180,7 @@ public final class ImportedModelRegistry {
     }
 
     private static void injectAnimation(Path animPath, ResourceLocation location) throws IOException {
-        String content = Files.readString(animPath, Charset.defaultCharset());
+        String content = Files.readString(animPath, StandardCharsets.UTF_8);
         JsonObject jsonObj = net.minecraft.util.GsonHelper.fromJson(GEO_GSON, content, JsonObject.class);
         BakedAnimations bakedAnimations = GEO_GSON.fromJson(jsonObj, BakedAnimations.class);
         GeckoLibCache.getBakedAnimations().put(location, bakedAnimations);
