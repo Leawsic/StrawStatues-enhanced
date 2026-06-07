@@ -34,14 +34,16 @@ config/strawstatues/imported_models/<model_id>/
 |---|---|
 | `/strawstatues import reload` | Rescan `config/strawstatues/imported_models/` |
 | `/strawstatues import list` | List available model IDs |
-| `/strawstatues import select <modelId>` | Assign model to the statue you are looking at |
+| `/strawstatues import select <modelId>` | Assign model to the statue you are looking at (crosshair) |
+| `/strawstatues import near <modelId>` | Assign model to the nearest statue within 10 blocks |
 
 #### Workflow
 
 1. Place model files in `config/strawstatues/imported_models/<id>/`
 2. Run `/strawstatues import reload`
 3. Run `/strawstatues import list` to verify
-4. Look at the statue and run `/strawstatues import select <id>`
+4. Look at the statue and run `/strawstatues import select <id>`, OR
+   run `/strawstatues import near <id>` to target the closest statue
 
 ### Statue Screens
 
@@ -96,14 +98,16 @@ config/strawstatues/imported_models/<模型名称>/
 |---|---|
 | `/strawstatues import reload` | 重新扫描 `config/strawstatues/imported_models/` |
 | `/strawstatues import list` | 列出可用模型 ID |
-| `/strawstatues import select <模型Id>` | 为注视的雕像指定模型 |
+| `/strawstatues import select <模型Id>` | 为准星对准的雕像指定模型 |
+| `/strawstatues import near <模型Id>` | 为 10 格内最近的雕像指定模型 |
 
 #### 使用步骤
 
 1. 将模型文件放入 `config/strawstatues/imported_models/<名称>/`
 2. 执行 `/strawstatues import reload`
 3. 执行 `/strawstatues import list` 确认模型已加载
-4. 注视雕像，执行 `/strawstatues import select <名称>`
+4. 注视雕像，执行 `/strawstatues import select <名称>`，
+   或执行 `/strawstatues import near <名称>` 选择最近的雕像
 
 ### 雕像配置界面
 
