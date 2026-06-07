@@ -106,12 +106,30 @@ public final class ImportedModelRegistry {
     }
 
     private static void loadModelFromDir(String modelId, Path dir) {
-        Path geoJson = dir.resolve("model.geo.json");
-        Path texture = dir.resolve("texture.png");
-        Path animation = dir.resolve("animation.animation.json");
+        // Scan directory for any .geo.json, .png, and .animation.json files
+        Path geoJson = null;
+        Path texture = null;
+        Path animation = null;
 
-        if (!Files.exists(geoJson) || !Files.exists(texture)) {
-            StrawStatues.LOGGER.debug("Skipping '{}': missing model.geo.json or texture.png", modelId);
+        try (var files = Files.list(dir)) {
+            var fileList = files.toList();
+            for (Path f : fileList) {
+                String name = f.getFileName().toString().toLowerCase();
+                if (name.endsWith(".geo.json") && geoJson == null) {
+                    geoJson = f;
+                } else if (name.endsWith(".png") && texture == null) {
+                    texture = f;
+                } else if (name.endsWith(".animation.json") && animation == null) {
+                    animation = f;
+                }
+            }
+        } catch (IOException e) {
+            StrawStatues.LOGGER.debug("Cannot list directory '{}'", modelId);
+            return;
+        }
+
+        if (geoJson == null || texture == null) {
+            StrawStatues.LOGGER.debug("Skipping '{}': no .geo.json or .png file found in directory", modelId);
             return;
         }
 
@@ -123,13 +141,14 @@ public final class ImportedModelRegistry {
             injectGeoModel(geoJson, modelLoc);
             registerTexture(texture, texLoc);
 
-            Optional<Path> animPath = Files.exists(animation) ? Optional.of(animation) : Optional.empty();
+            Optional<Path> animPath = animation != null && Files.exists(animation) ? Optional.of(animation) : Optional.empty();
             if (animPath.isPresent()) {
                 injectAnimation(animation, animLoc);
             }
 
             REGISTRY.put(modelId, new ModelEntry(modelId, geoJson, texture, animPath, modelLoc, texLoc, animLoc));
-            StrawStatues.LOGGER.info("Loaded imported model: {}", modelId);
+            StrawStatues.LOGGER.info("Loaded imported model: {} (geo: {}, tex: {})", modelId,
+                    geoJson.getFileName(), texture.getFileName());
 
         } catch (Exception e) {
             StrawStatues.LOGGER.warn("Failed to load imported model '{}': {}", modelId, e.getMessage());

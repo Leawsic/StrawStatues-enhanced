@@ -9,7 +9,7 @@ import fuzs.puzzleslib.api.client.core.v1.ClientModConstructor;
 import fuzs.puzzleslib.api.client.core.v1.context.EntityRenderersContext;
 import fuzs.puzzleslib.api.client.core.v1.context.LayerDefinitionsContext;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueEyeScreen;
-import fuzs.strawstatues.client.gui.screens.strawstatue.ImportedModelScreen;
+import fuzs.strawstatues.client.command.ImportedModelCommands;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueModelPartsScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatuePositionScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueScaleScreen;
@@ -20,6 +20,7 @@ import fuzs.strawstatues.client.renderer.entity.ImportedStrawStatueRenderer;
 import fuzs.strawstatues.client.renderer.entity.StrawStatueRenderer;
 import fuzs.strawstatues.init.ModRegistry;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.model.ArmorStandArmorModel;
 import net.minecraft.client.model.geom.LayerDefinitions;
@@ -44,8 +45,8 @@ public class StrawStatuesClient implements ClientModConstructor {
         // Register built-in default model + scan for imported models
         ImportedModelRegistry.registerDefaultModel();
         ImportedModelRegistry.scanAndLoad();
-        // Register import commands
-        ImportedModelScreen.registerCommands();
+        // Register /strawstatues import ... commands
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, ctx) -> ImportedModelCommands.register());
         ArmorStandRotationsScreen.registerPosePartMutatorFilter(ModRegistry.CAPE_POSE_PART_MUTATOR, armorStand -> {
             StrawStatue strawStatue = (StrawStatue) armorStand;
             if (strawStatue.isModelPartShown(PlayerModelPart.CAPE)) {
