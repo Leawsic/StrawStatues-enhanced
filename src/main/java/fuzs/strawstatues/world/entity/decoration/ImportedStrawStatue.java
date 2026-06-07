@@ -114,12 +114,15 @@ public class ImportedStrawStatue extends StrawStatue implements GeoEntity {
                 ArmorStandScreenType.ROTATIONS, ArmorStandScreenType.POSES,
                 ArmorStandScreenType.STYLE,
                 ModRegistry.MODEL_PARTS_SCREEN_TYPE,
-                ModRegistry.STRAW_STATUE_IMPORTED_MODEL_SCREEN_TYPE,
                 ModRegistry.STRAW_STATUE_POSITION_SCREEN_TYPE,
                 ModRegistry.STRAW_STATUE_SCALE_SCREEN_TYPE,
                 ArmorStandScreenType.EQUIPMENT
         };
     }
+
+    // ── Interaction ─────────────────────────────────────────
+    // Model management is done via commands (/strawstatues import ...).
+    // No custom interact needed — the default armor stand menu is used.
 
     // ── Interaction ─────────────────────────────────────────
 

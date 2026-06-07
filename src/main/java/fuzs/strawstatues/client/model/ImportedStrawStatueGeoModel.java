@@ -1,15 +1,15 @@
 package fuzs.strawstatues.client.model;
 
 import fuzs.strawstatues.client.importmodel.ImportedModelRegistry;
+import fuzs.strawstatues.client.renderer.entity.StrawStatueRenderer;
 import fuzs.strawstatues.importmodel.ImportedModelData;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.cache.GeckoLibCache;
+import software.bernie.geckolib.cache.object.BakedGeoModel;
 import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.renderer.GeoRenderer;
 import fuzs.strawstatues.world.entity.decoration.ImportedStrawStatue;
-
-import software.bernie.geckolib.cache.GeckoLibCache;
-import software.bernie.geckolib.cache.object.BakedGeoModel;
 
 /**
  * GeoModel that resolves model/texture/animation resources from the
@@ -19,12 +19,11 @@ public class ImportedStrawStatueGeoModel extends GeoModel<ImportedStrawStatue> {
 
     @Override
     public BakedGeoModel getBakedModel(ResourceLocation location) {
-        // If the default model was cleared by a GeckoLib cache reload, re-register it on the fly
+        // Re-register default/imported models if they were cleared by GeckoLib's cache reload
         if (!GeckoLibCache.getBakedModels().containsKey(location)) {
             if (location.equals(ImportedModelRegistry.DEFAULT_MODEL_LOC)) {
                 ImportedModelRegistry.registerDefaultModelNow(location);
             } else {
-                // Try to reload the model from the registry (for user-imported models)
                 for (var entry : ImportedModelRegistry.getAvailableModelIds()) {
                     var modelEntry = ImportedModelRegistry.getModel(entry);
                     if (modelEntry.isPresent() && modelEntry.get().modelLocation().equals(location)) {
@@ -53,7 +52,6 @@ public class ImportedStrawStatueGeoModel extends GeoModel<ImportedStrawStatue> {
                 return entry.get().modelLocation();
             }
         }
-        // Built-in default model (always registered in GeckoLibCache)
         return ImportedModelRegistry.DEFAULT_MODEL_LOC;
     }
 
@@ -71,7 +69,8 @@ public class ImportedStrawStatueGeoModel extends GeoModel<ImportedStrawStatue> {
                 return entry.get().textureLocation();
             }
         }
-        return ImportedModelRegistry.DEFAULT_TEXTURE_LOC;
+        // Use the existing straw statue texture as default fallback (always available)
+        return StrawStatueRenderer.STRAW_STATUE_LOCATION;
     }
 
     @Override

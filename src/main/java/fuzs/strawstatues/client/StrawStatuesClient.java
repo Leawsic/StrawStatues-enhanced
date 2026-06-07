@@ -8,8 +8,8 @@ import fuzs.puzzlesapi.api.statues.v1.world.inventory.ArmorStandMenu;
 import fuzs.puzzleslib.api.client.core.v1.ClientModConstructor;
 import fuzs.puzzleslib.api.client.core.v1.context.EntityRenderersContext;
 import fuzs.puzzleslib.api.client.core.v1.context.LayerDefinitionsContext;
-import fuzs.strawstatues.client.gui.screens.strawstatue.ImportedModelScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueEyeScreen;
+import fuzs.strawstatues.client.gui.screens.strawstatue.ImportedModelScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueModelPartsScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatuePositionScreen;
 import fuzs.strawstatues.client.gui.screens.strawstatue.StrawStatueScaleScreen;
@@ -40,11 +40,12 @@ public class StrawStatuesClient implements ClientModConstructor {
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_POSITION_SCREEN_TYPE, StrawStatuePositionScreen::new);
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_EYE_SCREEN_TYPE, StrawStatueEyeScreen::new);
         ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_SCALE_SCREEN_TYPE, StrawStatueScaleScreen::new);
-        ArmorStandScreenFactory.register(ModRegistry.STRAW_STATUE_IMPORTED_MODEL_SCREEN_TYPE, ImportedModelScreen::new);
 
         // Register built-in default model + scan for imported models
         ImportedModelRegistry.registerDefaultModel();
         ImportedModelRegistry.scanAndLoad();
+        // Register import commands
+        ImportedModelScreen.registerCommands();
         ArmorStandRotationsScreen.registerPosePartMutatorFilter(ModRegistry.CAPE_POSE_PART_MUTATOR, armorStand -> {
             StrawStatue strawStatue = (StrawStatue) armorStand;
             if (strawStatue.isModelPartShown(PlayerModelPart.CAPE)) {
