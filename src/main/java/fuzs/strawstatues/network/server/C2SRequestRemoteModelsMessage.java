@@ -21,8 +21,9 @@ public class C2SRequestRemoteModelsMessage implements MessageV2<C2SRequestRemote
             @Override
             public void handle(C2SRequestRemoteModelsMessage message, Player player, Object gameInstance) {
                 if (player instanceof ServerPlayer sp) {
+                    // Send uploader-prefixed IDs for display: "uploader:modelId"
                     StrawStatues.NETWORK.sendTo(
-                        new S2CRemoteModelListMessage(ServerModelRegistry.getAvailableModelIds()), sp);
+                        new S2CRemoteModelListMessage(ServerModelRegistry.getAvailableWithUploader()), sp);
                 }
             }
         };

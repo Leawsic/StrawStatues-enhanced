@@ -86,8 +86,28 @@ public final class ServerModelRegistry {
         Path dir = SERVER_DIR.resolve(modelId);
         if (!Files.isDirectory(dir)) return List.of();
         try (var s = Files.list(dir)) {
-            return s.map(p -> p.getFileName().toString()).toList();
+            return s.map(p -> p.getFileName().toString())
+                     .filter(n -> !n.equals(".uploader"))
+                     .toList();
         } catch (IOException e) { return List.of(); }
+    }
+
+    /** Read the uploader name from the metadata file, or empty string. */
+    public static String getUploader(String modelId) {
+        Path f = SERVER_DIR.resolve(modelId).resolve(".uploader");
+        if (!Files.exists(f)) return "";
+        try { return Files.readString(f).trim(); } catch (IOException e) { return ""; }
+    }
+
+    /** Return model IDs as "uploader:modelId" strings for display. */
+    public static Set<String> getAvailableWithUploader() {
+        Set<String> result = new LinkedHashSet<>();
+        for (String id : AVAILABLE) {
+            String uploader = getUploader(id);
+            if (!uploader.isEmpty()) result.add(uploader + ":" + id);
+            else result.add(id);
+        }
+        return result;
     }
 
     /** Compute SHA-256 hash for a model file, or null on failure. */

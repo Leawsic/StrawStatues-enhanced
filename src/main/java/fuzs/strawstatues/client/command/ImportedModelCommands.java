@@ -125,7 +125,8 @@ public final class ImportedModelCommands {
                     // Also show what we have cached from previous responses
                     var cached = RemoteModelCache.getAvailable();
                     if (cached.isEmpty()) {
-                        c.getSource().sendFeedback(Component.literal("Requesting remote model list... (none cached yet)"));
+                        c.getSource().sendFeedback(Component.literal("Requesting remote model list... (none cached " +
+                                "yet, try again)"));
                     } else {
                         c.getSource().sendFeedback(Component.literal("Cached remote models: " + String.join(", ", cached)));
                     }
@@ -208,23 +209,31 @@ public final class ImportedModelCommands {
         return applyModel(source, nearest.get(0), modelId, remote);
     }
 
+    /** Extract short model ID from display format (strip "uploader:" prefix if present). */
+    private static String shortModelId(String displayId) {
+        int colon = displayId.indexOf(':');
+        return colon > 0 ? displayId.substring(colon + 1) : displayId;
+    }
+
     /** Set model on entity and send the appropriate network message. */
     private static int applyModel(net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source,
                                    ImportedStrawStatue statue, String modelId, boolean remote) {
+        // For remote models, strip the "uploader:" prefix from display IDs
+        String sid = remote ? shortModelId(modelId) : modelId;
         ImportedModelData data = new ImportedModelData();
-        data.setModelId(modelId);
+        data.setModelId(sid);
         statue.setImportedModel(data);
 
         if (remote) {
             // Send client's existing file hashes for resume support
-            Map<String, String> localHashes = RemoteModelCache.computeLocalHashes(modelId);
-            C2SSelectRemoteModelMessage.sendToServer(statue.getId(), modelId, localHashes);
+            Map<String, String> localHashes = RemoteModelCache.computeLocalHashes(sid);
+            C2SSelectRemoteModelMessage.sendToServer(statue.getId(), sid, localHashes);
             int knownFiles = localHashes.size();
             source.sendFeedback(Component.literal("Requested remote model '" + modelId + "' from server" +
                     (knownFiles > 0 ? " (" + knownFiles + " known files, resuming)" : "")));
         } else {
             C2SImportedStrawStatueMessage.sendToServer(statue.getId(), data);
-            source.sendFeedback(Component.literal("Model set to: " + modelId));
+            source.sendFeedback(Component.literal("Model set to: " + sid));
         }
         return 1;
     }
