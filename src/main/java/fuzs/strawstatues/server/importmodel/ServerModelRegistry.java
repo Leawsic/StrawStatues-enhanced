@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ServerModelRegistry {
     private static final Path SERVER_DIR = Paths.get("config", StrawStatues.MOD_ID, "server_models");
     private static final Set<String> AVAILABLE = ConcurrentHashMap.newKeySet();
-    private static final Set<String> VALID_EXT = Set.of(".geo.json", ".png", ".animation.json");
     private ServerModelRegistry() {}
 
     public static void init() {
@@ -47,10 +46,13 @@ public final class ServerModelRegistry {
     public static boolean isModelAvailable(String id) { return AVAILABLE.contains(id); }
 
     public static boolean saveUploadedModel(String modelId, Map<String, byte[]> files) {
-        // Validate file names
+        // Validate file names (allow .uploader metadata and standard model files)
         for (String name : files.keySet()) {
             String lower = name.toLowerCase();
-            boolean valid = lower.endsWith(".geo.json") || lower.endsWith(".png") || lower.endsWith(".animation.json");
+            boolean valid = lower.equals(".uploader")
+                    || lower.endsWith(".geo.json")
+                    || lower.endsWith(".png")
+                    || lower.endsWith(".animation.json");
             if (!valid) {
                 StrawStatues.LOGGER.warn("Rejected upload file '{}' for model '{}': invalid extension", name, modelId);
                 return false;
