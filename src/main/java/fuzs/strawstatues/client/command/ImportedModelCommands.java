@@ -97,11 +97,11 @@ public final class ImportedModelCommands {
                                 c.getSource().sendError(Component.literal("No valid model files found (need .geo.json + .png)"));
                                 return 0;
                             }
-                            if (!files.keySet().stream().anyMatch(n -> n.endsWith(".geo.json"))) {
+                            if (files.keySet().stream().noneMatch(n -> n.endsWith(".geo.json"))) {
                                 c.getSource().sendError(Component.literal("Upload must include at least one .geo.json file"));
                                 return 0;
                             }
-                            if (!files.keySet().stream().anyMatch(n -> n.endsWith(".png"))) {
+                            if (files.keySet().stream().noneMatch(n -> n.endsWith(".png"))) {
                                 c.getSource().sendError(Component.literal("Upload must include a .png texture"));
                                 return 0;
                             }
@@ -122,7 +122,13 @@ public final class ImportedModelCommands {
         var remoteList = ClientCommandManager.literal("list")
                 .executes(c -> {
                     fuzs.strawstatues.StrawStatues.NETWORK.sendToServer(new C2SRequestRemoteModelsMessage());
-                    c.getSource().sendFeedback(Component.literal("Requesting remote model list..."));
+                    // Also show what we have cached from previous responses
+                    var cached = RemoteModelCache.getAvailable();
+                    if (cached.isEmpty()) {
+                        c.getSource().sendFeedback(Component.literal("Requesting remote model list... (none cached yet)"));
+                    } else {
+                        c.getSource().sendFeedback(Component.literal("Cached remote models: " + String.join(", ", cached)));
+                    }
                     return 1;
                 });
 

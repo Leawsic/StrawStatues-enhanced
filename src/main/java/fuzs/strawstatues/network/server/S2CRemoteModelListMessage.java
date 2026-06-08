@@ -31,6 +31,7 @@ public class S2CRemoteModelListMessage implements MessageV2<S2CRemoteModelListMe
             @Override
             public void handle(S2CRemoteModelListMessage message, Player player, Object gameInstance) {
                 fuzs.strawstatues.client.importmodel.RemoteModelCache.setAvailable(message.modelIds);
+                fuzs.strawstatues.StrawStatues.LOGGER.info("Received remote model list: {} models", message.modelIds.size());
             }
         };
     }
