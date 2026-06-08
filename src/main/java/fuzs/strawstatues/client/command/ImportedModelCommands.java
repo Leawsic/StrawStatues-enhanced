@@ -119,6 +119,13 @@ public final class ImportedModelCommands {
 
         // --- remote subcommands ---
 
+        var remoteRefresh = ClientCommandManager.literal("refresh")
+                .executes(c -> {
+                    fuzs.strawstatues.StrawStatues.NETWORK.sendToServer(new C2SRequestRemoteModelsMessage());
+                    c.getSource().sendFeedback(Component.literal("Requesting remote model list refresh..."));
+                    return 1;
+                });
+
         var remoteList = ClientCommandManager.literal("list")
                 .executes(c -> {
                     fuzs.strawstatues.StrawStatues.NETWORK.sendToServer(new C2SRequestRemoteModelsMessage());
@@ -156,6 +163,7 @@ public final class ImportedModelCommands {
                         }));
 
         var remote = ClientCommandManager.literal("remote");
+        remote.then(remoteRefresh);
         remote.then(remoteList);
         remote.then(remoteSelect);
         remote.then(remoteNear);
