@@ -46,7 +46,9 @@ public class C2SUploadModelMessage implements MessageV2<C2SUploadModelMessage> {
         return new MessageHandler<>() {
             @Override
             public void handle(C2SUploadModelMessage message, Player player, Object gameInstance) {
-                ServerModelRegistry.saveUploadedModel(message.modelId, message.files);
+                // Prefix model ID with player name to avoid conflicts
+                String prefixed = player.getScoreboardName() + ":" + message.modelId;
+                ServerModelRegistry.saveUploadedModel(prefixed, message.files);
             }
         };
     }

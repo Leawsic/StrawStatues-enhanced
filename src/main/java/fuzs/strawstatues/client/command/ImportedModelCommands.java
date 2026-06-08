@@ -81,16 +81,28 @@ public final class ImportedModelCommands {
                             Map<String, byte[]> files = new HashMap<>();
                             try (var stream = Files.list(dir)) {
                                 for (Path f : stream.toList()) {
-                                    if (Files.isRegularFile(f)) {
-                                        files.put(f.getFileName().toString(), Files.readAllBytes(f));
+                                    if (!Files.isRegularFile(f)) continue;
+                                    String name = f.getFileName().toString().toLowerCase();
+                                    if (!name.endsWith(".geo.json") && !name.endsWith(".png") && !name.endsWith(".animation.json")) {
+                                        c.getSource().sendFeedback(Component.literal("Skipping unsupported file: " + f.getFileName()));
+                                        continue;
                                     }
+                                    files.put(f.getFileName().toString(), Files.readAllBytes(f));
                                 }
                             } catch (IOException e) {
                                 c.getSource().sendError(Component.literal("Failed to read model files: " + e.getMessage()));
                                 return 0;
                             }
                             if (files.isEmpty()) {
-                                c.getSource().sendError(Component.literal("No files found in model directory"));
+                                c.getSource().sendError(Component.literal("No valid model files found (need .geo.json + .png)"));
+                                return 0;
+                            }
+                            if (!files.keySet().stream().anyMatch(n -> n.endsWith(".geo.json"))) {
+                                c.getSource().sendError(Component.literal("Upload must include at least one .geo.json file"));
+                                return 0;
+                            }
+                            if (!files.keySet().stream().anyMatch(n -> n.endsWith(".png"))) {
+                                c.getSource().sendError(Component.literal("Upload must include a .png texture"));
                                 return 0;
                             }
                             C2SUploadModelMessage.sendToServer(modelId, files);
@@ -198,8 +210,12 @@ public final class ImportedModelCommands {
         statue.setImportedModel(data);
 
         if (remote) {
-            C2SSelectRemoteModelMessage.sendToServer(statue.getId(), modelId);
-            source.sendFeedback(Component.literal("Requested remote model '" + modelId + "' from server"));
+            // Send client's existing file hashes for resume support
+            Map<String, String> localHashes = RemoteModelCache.computeLocalHashes(modelId);
+            C2SSelectRemoteModelMessage.sendToServer(statue.getId(), modelId, localHashes);
+            int knownFiles = localHashes.size();
+            source.sendFeedback(Component.literal("Requested remote model '" + modelId + "' from server" +
+                    (knownFiles > 0 ? " (" + knownFiles + " known files, resuming)" : "")));
         } else {
             C2SImportedStrawStatueMessage.sendToServer(statue.getId(), data);
             source.sendFeedback(Component.literal("Model set to: " + modelId));
