@@ -1,6 +1,6 @@
 # Straw Statues
 
-[English](#english) | [中文](#chinese)
+[English](#english) | [中文](#中文)
 
 ---
 
@@ -30,20 +30,41 @@ config/strawstatues/imported_models/<model_id>/
 
 #### Commands
 
+All commands are under `/strawstatues import`:
+
 | Command | Description |
 |---|---|
-| `/strawstatues import reload` | Rescan `config/strawstatues/imported_models/` |
-| `/strawstatues import list` | List available model IDs |
-| `/strawstatues import select <modelId>` | Assign model to the statue you are looking at (crosshair) |
-| `/strawstatues import near <modelId>` | Assign model to the nearest statue within 10 blocks |
+| `local reload` | Rescan `config/strawstatues/imported_models/` |
+| `local list` | List available local model IDs |
+| `local select <modelId>` | Assign local model to the statue you are looking at |
+| `local near <modelId>` | Assign local model to the nearest statue within 10 blocks |
+| `local upload <modelId>` | Upload a local model to the server for other players |
+| `remote list` | Request list of models available on the server |
+| `remote select <modelId>` | Download and assign a server model to the looked-at statue |
+| `remote near <modelId>` | Download and assign a server model to the nearest statue |
 
-#### Workflow
+#### Local Model Workflow
 
 1. Place model files in `config/strawstatues/imported_models/<id>/`
-2. Run `/strawstatues import reload`
-3. Run `/strawstatues import list` to verify
-4. Look at the statue and run `/strawstatues import select <id>`, OR
-   run `/strawstatues import near <id>` to target the closest statue
+2. Run `/strawstatues import local reload`
+3. Run `/strawstatues import local list` to verify
+4. Look at the statue and run `/strawstatues import local select <id>`, OR
+   run `/strawstatues import local near <id>`
+
+#### Sharing Models via Server
+
+When you upload a model, it is stored in the server's `config/strawstatues/server_models/` directory. Other players can list and download it:
+
+```
+# Player A: upload model
+/strawstatues import local upload robot
+
+# Player B: list and download from server
+/strawstatues import remote list
+/strawstatues import remote select Leawsic:robot
+```
+
+Models are automatically downloaded when a statue with a server-side model enters your view. Downloads support resume (SHA-256 hash comparison), so interrupted transfers only re-send changed files.
 
 ### Statue Screens
 
@@ -68,7 +89,7 @@ Sneak + right-click with empty hand on a statue to open the configuration menu.
 
 ---
 
-## Chinese
+## 中文
 
 ### 功能
 
@@ -94,20 +115,41 @@ config/strawstatues/imported_models/<模型名称>/
 
 #### 命令
 
+所有命令位于 `/strawstatues import` 下：
+
 | 命令 | 说明 |
 |---|---|
-| `/strawstatues import reload` | 重新扫描 `config/strawstatues/imported_models/` |
-| `/strawstatues import list` | 列出可用模型 ID |
-| `/strawstatues import select <模型Id>` | 为准星对准的雕像指定模型 |
-| `/strawstatues import near <模型Id>` | 为 10 格内最近的雕像指定模型 |
+| `local reload` | 重新扫描本地模型目录 |
+| `local list` | 列出本地可用的模型 ID |
+| `local select <模型Id>` | 使用本地模型，为准星对准的雕像指定 |
+| `local near <模型Id>` | 使用本地模型，为 10 格内最近的雕像指定 |
+| `local upload <模型Id>` | 将本地模型上传到服务端供其他玩家使用 |
+| `remote list` | 请求服务端模型列表 |
+| `remote select <模型Id>` | 下载并使用服务端模型，为准星对准的雕像指定 |
+| `remote near <模型Id>` | 下载并使用服务端模型，为最近的雕像指定 |
 
-#### 使用步骤
+#### 本地模型使用步骤
 
 1. 将模型文件放入 `config/strawstatues/imported_models/<名称>/`
-2. 执行 `/strawstatues import reload`
-3. 执行 `/strawstatues import list` 确认模型已加载
-4. 注视雕像，执行 `/strawstatues import select <名称>`，
-   或执行 `/strawstatues import near <名称>` 选择最近的雕像
+2. 执行 `/strawstatues import local reload`
+3. 执行 `/strawstatues import local list` 确认模型已加载
+4. 注视雕像，执行 `/strawstatues import local select <名称>`，
+   或执行 `/strawstatues import local near <名称>` 选择最近的雕像
+
+#### 通过服务端分享模型
+
+上传模型后，其他玩家可以列出并下载服务端存储的模型：
+
+```
+# 玩家 A：上传模型
+/strawstatues import local upload robot
+
+# 玩家 B：列出并下载服务端模型
+/strawstatues import remote list
+/strawstatues import remote select Leawsic:robot
+```
+
+当带有服务端模型的雕像进入视野时，模型会自动下载。下载支持断点续传（SHA-256 哈希比较），中断后重新传输仅发送缺失或更改的文件。
 
 ### 雕像配置界面
 
@@ -131,6 +173,12 @@ config/strawstatues/imported_models/<模型名称>/
 - GeckoLib 4 (>=4.8.2)
 
 ---
+
+## Acknowledgements
+
+- [GeckoLib](https://github.com/bernie-g/geckolib) — Animation engine for Minecraft mods, used for rendering imported 3D models
+- [StrawStatues (Original)](https://github.com/Fuzss/straw-statues) — Original mod by Fuzss, on which this project 
+  is based
 
 ## License
 
