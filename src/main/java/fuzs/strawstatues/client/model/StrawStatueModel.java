@@ -29,6 +29,10 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
     public final ModelPart slimRightForearm;
     public final ModelPart rightSleeveForearm;
     public final ModelPart leftSleeveForearm;
+    public final ModelPart rightPantsLower;
+    public final ModelPart leftPantsLower;
+    public final ModelPart slimLeftSleeveForearm;
+    public final ModelPart slimRightSleeveForearm;
     private final ModelPart cloak;
 
     private boolean slim;
@@ -47,6 +51,10 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
         this.slimRightForearm = modelPart.getChild("slim_right_arm").getChild("slim_right_forearm");
         this.rightSleeveForearm = modelPart.getChild("right_sleeve").getChild("right_sleeve_forearm");
         this.leftSleeveForearm = modelPart.getChild("left_sleeve").getChild("left_sleeve_forearm");
+        this.rightPantsLower = modelPart.getChild("right_pants").getChild("right_pants_lower");
+        this.leftPantsLower = modelPart.getChild("left_pants").getChild("left_pants_lower");
+        this.slimLeftSleeveForearm = modelPart.getChild("slim_left_sleeve").getChild("slim_left_sleeve_forearm");
+        this.slimRightSleeveForearm = modelPart.getChild("slim_right_sleeve").getChild("slim_right_sleeve_forearm");
         this.cloak = modelPart.getChild("cloak");
     }
 
@@ -203,30 +211,34 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
     private void applySubBoneRotations(StrawStatue entity) {
         float DEG_TO_RAD = 0.017453292F;
 
-        // Elbow bend: gentle forward flexion (POSITIVE xRot) to avoid gaps.
-        // Arm ranges (-180, 0) where 0 = hanging down, negative = backward.
-        // A small constant carry-angle (~5°) + subtle increase when arm goes far back.
+        // Elbow bend: same rotation for inner (arm) + outer (sleeve) layers
         float rightArmX = entity.getRightArmPose().getX();
         float rightElbowDeg = 5.0F + Math.max(0, (-rightArmX - 60.0F) * 0.08F);
         this.rightForearm.xRot = DEG_TO_RAD * rightElbowDeg;
+        this.rightSleeveForearm.xRot = DEG_TO_RAD * rightElbowDeg;
 
         float leftArmX = entity.getLeftArmPose().getX();
         float leftElbowDeg = 5.0F + Math.max(0, (-leftArmX - 60.0F) * 0.08F);
         this.leftForearm.xRot = DEG_TO_RAD * leftElbowDeg;
+        this.leftSleeveForearm.xRot = DEG_TO_RAD * leftElbowDeg;
 
         if (this.slim) {
             this.slimRightForearm.xRot = this.rightForearm.xRot;
             this.slimLeftForearm.xRot = this.leftForearm.xRot;
+            this.slimRightSleeveForearm.xRot = this.rightForearm.xRot;
+            this.slimLeftSleeveForearm.xRot = this.leftForearm.xRot;
         }
 
-        // Knee bend: always bends backward regardless of leg direction.
+        // Knee bend: same rotation for inner (leg) + outer (pants) layers
         float rightLegX = entity.getRightLegPose().getX();
         float rightKneeDeg = Math.abs(rightLegX) * 0.5F;
         this.rightLowerLeg.xRot = DEG_TO_RAD * rightKneeDeg;
+        this.rightPantsLower.xRot = DEG_TO_RAD * rightKneeDeg;
 
         float leftLegX = entity.getLeftLegPose().getX();
         float leftKneeDeg = Math.abs(leftLegX) * 0.5F;
         this.leftLowerLeg.xRot = DEG_TO_RAD * leftKneeDeg;
+        this.leftPantsLower.xRot = DEG_TO_RAD * leftKneeDeg;
     }
 
     private void setupSlimAnim(StrawStatue entity) {
