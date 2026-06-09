@@ -72,39 +72,35 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
     }
 
     private static void splitArmLegCubes(PartDefinition part, CubeDeformation deform) {
-        // ── Right arm ──
-        // Position the forearm slightly higher than mathematically exact so the two
-        // halves overlap ~0.5 px at the elbow, preventing visible gaps when bent.
+        // Overlap at joints: put child pivot closer to parent, make child cubes 8px
+        // (instead of 6) so the two halves overlap ~1.5 px, hiding any rotation gap.
         PartDefinition rightArm = part.addOrReplaceChild("right_arm",
                 CubeListBuilder.create().texOffs(40, 16).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
                 PartPose.offset(-5.0F, 2.0F, 0.0F));
         rightArm.addOrReplaceChild("right_forearm",
-                CubeListBuilder.create().texOffs(40, 16).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 7.0F, 4.0F, deform),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(40, 16).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F, deform),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
 
-        // ── Left arm ──
         PartDefinition leftArm = part.addOrReplaceChild("left_arm",
                 CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
                 PartPose.offset(5.0F, 2.0F, 0.0F));
         leftArm.addOrReplaceChild("left_forearm",
-                CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 7.0F, 4.0F, deform),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F, deform),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
 
-        // ── Right leg ──
         PartDefinition rightLeg = part.addOrReplaceChild("right_leg",
                 CubeListBuilder.create().texOffs(0, 16).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
                 PartPose.offset(-1.9F, 12.0F, 0.0F));
         rightLeg.addOrReplaceChild("right_lower_leg",
-                CubeListBuilder.create().texOffs(0, 16).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 7.0F, 4.0F, deform),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(0, 16).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 8.0F, 4.0F, deform),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
 
-        // ── Left leg ──
         PartDefinition leftLeg = part.addOrReplaceChild("left_leg",
                 CubeListBuilder.create().texOffs(16, 48).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
                 PartPose.offset(1.9F, 12.0F, 0.0F));
         leftLeg.addOrReplaceChild("left_lower_leg",
-                CubeListBuilder.create().texOffs(16, 48).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 7.0F, 4.0F, deform),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(16, 48).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 8.0F, 4.0F, deform),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
     }
 
     private static void splitSleeveCubes(PartDefinition part, CubeDeformation deform) {
@@ -114,15 +110,15 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
                 CubeListBuilder.create().texOffs(40, 32).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, sleeveDeform),
                 PartPose.offset(-5.0F, 2.0F, 0.0F));
         rightSleeve.addOrReplaceChild("right_sleeve_forearm",
-                CubeListBuilder.create().texOffs(40, 32).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 7.0F, 4.0F, sleeveDeform),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(40, 32).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F, sleeveDeform),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
 
         PartDefinition leftSleeve = part.addOrReplaceChild("left_sleeve",
                 CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, sleeveDeform),
                 PartPose.offset(5.0F, 2.0F, 0.0F));
         leftSleeve.addOrReplaceChild("left_sleeve_forearm",
-                CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 7.0F, 4.0F, sleeveDeform),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F, sleeveDeform),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
     }
 
     private static void addSlimArmParts(PartDefinition part) {
@@ -130,29 +126,29 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
                 CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE),
                 PartPose.offset(5.0F, 2.5F, 0.0F));
         slimLeftArm.addOrReplaceChild("slim_left_forearm",
-                CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 7.0F, 4.0F, CubeDeformation.NONE),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 8.0F, 4.0F, CubeDeformation.NONE),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
 
         PartDefinition slimRightArm = part.addOrReplaceChild("slim_right_arm",
                 CubeListBuilder.create().texOffs(40, 16).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE),
                 PartPose.offset(-5.0F, 2.5F, 0.0F));
         slimRightArm.addOrReplaceChild("slim_right_forearm",
-                CubeListBuilder.create().texOffs(40, 16).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 7.0F, 4.0F, CubeDeformation.NONE),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(40, 16).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 8.0F, 4.0F, CubeDeformation.NONE),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
 
         PartDefinition slimLeftSleeve = part.addOrReplaceChild("slim_left_sleeve",
                 CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
                 PartPose.offset(5.0F, 2.5F, 0.0F));
         slimLeftSleeve.addOrReplaceChild("slim_left_sleeve_forearm",
-                CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 7.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 8.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
 
         PartDefinition slimRightSleeve = part.addOrReplaceChild("slim_right_sleeve",
                 CubeListBuilder.create().texOffs(40, 32).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
                 PartPose.offset(-5.0F, 2.5F, 0.0F));
         slimRightSleeve.addOrReplaceChild("slim_right_sleeve_forearm",
-                CubeListBuilder.create().texOffs(40, 32).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 7.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
-                PartPose.offset(0.0F, 5.5F, 0.0F));
+                CubeListBuilder.create().texOffs(40, 32).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 8.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
     }
 
     // ───────── Instance methods ─────────
