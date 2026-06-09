@@ -93,6 +93,9 @@ public class ModRegistry {
         }
     };
     public static final PosePartMutator CAPE_POSE_PART_MUTATOR = new PosePartMutator("cape", ArmorStandPose::getBodyPose, ArmorStandPose::withBodyPose, PosePartMutator.PosePartAxisRange.range(0.0F, 120.0F), PosePartMutator.PosePartAxisRange.range(-60.0F, 60.0F), PosePartMutator.PosePartAxisRange.range(-120.0, 120.0));
+    // Expanded arm ranges: X extended from (-180,0) to (-225,45) allowing some forward rotation
+    public static final PosePartMutator RIGHT_ARM_POSE_MUTATOR = new PosePartMutator("rightArm", ArmorStandPose::getRightArmPose, ArmorStandPose::withRightArmPose, PosePartMutator.PosePartAxisRange.range(-225.0F, 45.0F), PosePartMutator.PosePartAxisRange.range(-90.0F, 45.0F), PosePartMutator.PosePartAxisRange.range(-120.0F, 120.0F));
+    public static final PosePartMutator LEFT_ARM_POSE_MUTATOR = new PosePartMutator("leftArm", ArmorStandPose::getLeftArmPose, ArmorStandPose::withLeftArmPose, PosePartMutator.PosePartAxisRange.range(-225.0F, 45.0F), PosePartMutator.PosePartAxisRange.range(-45.0F, 90.0F), PosePartMutator.PosePartAxisRange.range(-120.0F, 120.0F));
     public static final EntityDataSerializer<Optional<GameProfile>> GAME_PROFILE_ENTITY_DATA_SERIALIZER = EntityDataSerializer.optional((friendlyByteBuf, gameProfile) -> {
         if (!gameProfile.isComplete()) {
             UUID uuid = UUIDUtil.createOfflinePlayerUUID(gameProfile.getName());

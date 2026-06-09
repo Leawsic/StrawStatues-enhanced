@@ -452,7 +452,7 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
 
     @Override
     public PosePartMutator[] getPosePartMutators() {
-        return new PosePartMutator[]{PosePartMutator.HEAD, ModRegistry.CAPE_POSE_PART_MUTATOR, PosePartMutator.RIGHT_ARM, PosePartMutator.LEFT_ARM, PosePartMutator.RIGHT_LEG, PosePartMutator.LEFT_LEG};
+        return new PosePartMutator[]{PosePartMutator.HEAD, ModRegistry.CAPE_POSE_PART_MUTATOR, ModRegistry.RIGHT_ARM_POSE_MUTATOR, ModRegistry.LEFT_ARM_POSE_MUTATOR, PosePartMutator.RIGHT_LEG, PosePartMutator.LEFT_LEG};
     }
 
     @Override
