@@ -31,22 +31,32 @@ public class StrawStatueGeoModel extends GeoModel<StrawStatue> {
 
     @Override
     public ResourceLocation getTextureResource(StrawStatue animatable) {
-        // Use the same dynamic skin logic as the vanilla renderer
         return StrawStatueRenderer.getPlayerProfileTexture(animatable, com.mojang.authlib.minecraft.MinecraftProfileTexture.Type.SKIN)
                 .orElse(FALLBACK_TEXTURE);
     }
 
     @Override
     public ResourceLocation getAnimationResource(StrawStatue animatable) {
-        // No custom animation needed; poses are driven by setCustomAnimations
         return MODEL;
+    }
+
+    // Override to disable re-render skip — ensures the pose updates every frame
+    @Override
+    public void handleAnimations(StrawStatue animatable, long instanceId, AnimationState<StrawStatue> animationState) {
+        // Force-process bones every frame, bypassing the re-render check
+        // that normally skips animation processing when the frame time hasn't changed
+        getAnimationProcessor().preAnimationSetup(animatable, 0);
+        if (!getAnimationProcessor().getRegisteredBones().isEmpty()) {
+            getAnimationProcessor().tickAnimation(animatable, this,
+                    animatable.getAnimatableInstanceCache().getManagerForId(instanceId), 0,
+                    animationState, crashIfBoneMissing());
+        }
+        setCustomAnimations(animatable, instanceId, animationState);
     }
 
     @Override
     public void setCustomAnimations(StrawStatue animatable, long instanceId, AnimationState<StrawStatue> animationState) {
-        // Apply ArmorStand pose rotations to the multi-bone skeleton
         applyPose(animatable);
-        // Apply procedural elbow/knee bending
         applySubBoneRotations(animatable);
     }
 
