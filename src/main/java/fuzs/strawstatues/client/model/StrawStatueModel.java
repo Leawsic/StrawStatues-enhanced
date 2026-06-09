@@ -57,6 +57,7 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
         PartDefinition partDefinition = meshDefinition.getRoot();
         splitArmLegCubes(partDefinition, CubeDeformation.NONE);
         splitSleeveCubes(partDefinition, CubeDeformation.NONE);
+        splitPantsCubes(partDefinition, CubeDeformation.NONE);
         addSlimArmParts(partDefinition);
         return LayerDefinition.create(meshDefinition, 64, 64);
     }
@@ -118,6 +119,25 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
                 PartPose.offset(5.0F, 2.0F, 0.0F));
         leftSleeve.addOrReplaceChild("left_sleeve_forearm",
                 CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 8.0F, 4.0F, sleeveDeform),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
+    }
+
+    /** Split pants (outer leg layer) into upper + lower so they share the same knee pivot as the inner leg. */
+    private static void splitPantsCubes(PartDefinition part, CubeDeformation deform) {
+        CubeDeformation pantsDeform = deform.extend(0.25F);
+        // Right pants
+        PartDefinition rightPants = part.addOrReplaceChild("right_pants",
+                CubeListBuilder.create().texOffs(0, 16).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, pantsDeform),
+                PartPose.offset(-1.9F, 12.0F, 0.0F));
+        rightPants.addOrReplaceChild("right_pants_lower",
+                CubeListBuilder.create().texOffs(0, 16).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 8.0F, 4.0F, pantsDeform),
+                PartPose.offset(0.0F, 4.5F, 0.0F));
+        // Left pants
+        PartDefinition leftPants = part.addOrReplaceChild("left_pants",
+                CubeListBuilder.create().texOffs(16, 48).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, pantsDeform),
+                PartPose.offset(1.9F, 12.0F, 0.0F));
+        leftPants.addOrReplaceChild("left_pants_lower",
+                CubeListBuilder.create().texOffs(16, 48).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 8.0F, 4.0F, pantsDeform),
                 PartPose.offset(0.0F, 4.5F, 0.0F));
     }
 
@@ -189,20 +209,17 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
         float rightArmX = entity.getRightArmPose().getX();
         float rightElbowDeg = 5.0F + Math.max(0, (-rightArmX - 60.0F) * 0.08F);
         this.rightForearm.xRot = DEG_TO_RAD * rightElbowDeg;
-        this.rightSleeveForearm.xRot = DEG_TO_RAD * rightElbowDeg;
 
         float leftArmX = entity.getLeftArmPose().getX();
         float leftElbowDeg = 5.0F + Math.max(0, (-leftArmX - 60.0F) * 0.08F);
         this.leftForearm.xRot = DEG_TO_RAD * leftElbowDeg;
-        this.leftSleeveForearm.xRot = DEG_TO_RAD * leftElbowDeg;
 
         if (this.slim) {
             this.slimRightForearm.xRot = this.rightForearm.xRot;
             this.slimLeftForearm.xRot = this.leftForearm.xRot;
         }
 
-        // Knee bend: the human knee is a hinge — it always bends BACKWARD regardless of
-        // whether the leg swings forward or backward. Use abs() for direction-agnostic amount.
+        // Knee bend: always bends backward regardless of leg direction.
         float rightLegX = entity.getRightLegPose().getX();
         float rightKneeDeg = Math.abs(rightLegX) * 0.5F;
         this.rightLowerLeg.xRot = DEG_TO_RAD * rightKneeDeg;
