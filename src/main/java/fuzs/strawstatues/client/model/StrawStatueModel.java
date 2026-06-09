@@ -207,11 +207,11 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
         // whether the leg swings forward or backward. Use abs() for direction-agnostic amount.
         float rightLegX = entity.getRightLegPose().getX();
         float rightKneeDeg = Math.abs(rightLegX) * 0.5F;
-        this.rightLowerLeg.xRot = -DEG_TO_RAD * rightKneeDeg;
+        this.rightLowerLeg.xRot = DEG_TO_RAD * rightKneeDeg;
 
         float leftLegX = entity.getLeftLegPose().getX();
         float leftKneeDeg = Math.abs(leftLegX) * 0.5F;
-        this.leftLowerLeg.xRot = -DEG_TO_RAD * leftKneeDeg;
+        this.leftLowerLeg.xRot = DEG_TO_RAD * leftKneeDeg;
     }
 
     private void setupSlimAnim(StrawStatue entity) {
