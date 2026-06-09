@@ -34,12 +34,13 @@ public class StrawStatueArmorModel<T extends ArmorStand> extends HumanoidModel<T
         float leftElbowDeg = 5.0F + Math.max(0, (-leftArmX - 60.0F) * 0.08F);
         this.leftForearm.xRot = DEG_TO_RAD * leftElbowDeg;
 
+        // Knee bend: the human knee always bends backward, regardless of leg direction.
         float rightLegX = entity.getRightLegPose().getX();
-        float rightKneeDeg = Math.max(0, rightLegX * 0.6F);
+        float rightKneeDeg = Math.abs(rightLegX) * 0.5F;
         this.rightLowerLeg.xRot = -DEG_TO_RAD * rightKneeDeg;
 
         float leftLegX = entity.getLeftLegPose().getX();
-        float leftKneeDeg = Math.max(0, leftLegX * 0.6F);
+        float leftKneeDeg = Math.abs(leftLegX) * 0.5F;
         this.leftLowerLeg.xRot = -DEG_TO_RAD * leftKneeDeg;
     }
 }

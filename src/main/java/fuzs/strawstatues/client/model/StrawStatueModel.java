@@ -203,14 +203,14 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
             this.slimLeftForearm.xRot = this.leftForearm.xRot;
         }
 
-        // Knee bend: when the leg lifts forward (positive X) the knee bends backwards.
-        // Increased from 0.25 to 0.6 for a much more visible effect.
+        // Knee bend: the human knee is a hinge — it always bends BACKWARD regardless of
+        // whether the leg swings forward or backward. Use abs() for direction-agnostic amount.
         float rightLegX = entity.getRightLegPose().getX();
-        float rightKneeDeg = Math.max(0, rightLegX * 0.6F);
+        float rightKneeDeg = Math.abs(rightLegX) * 0.5F;
         this.rightLowerLeg.xRot = -DEG_TO_RAD * rightKneeDeg;
 
         float leftLegX = entity.getLeftLegPose().getX();
-        float leftKneeDeg = Math.max(0, leftLegX * 0.6F);
+        float leftKneeDeg = Math.abs(leftLegX) * 0.5F;
         this.leftLowerLeg.xRot = -DEG_TO_RAD * leftKneeDeg;
     }
 
