@@ -185,27 +185,32 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
     private void applySubBoneRotations(StrawStatue entity) {
         float DEG_TO_RAD = 0.017453292F;
 
+        // Elbow bend: gentle forward flexion (POSITIVE xRot) to avoid gaps.
+        // Arm ranges (-180, 0) where 0 = hanging down, negative = backward.
+        // A small constant carry-angle (~5°) + subtle increase when arm goes far back.
         float rightArmX = entity.getRightArmPose().getX();
-        float rightElbowDeg = Math.max(0, (-rightArmX - 15.0F) * 0.35F);
-        this.rightForearm.xRot = -DEG_TO_RAD * rightElbowDeg;
-        this.rightSleeveForearm.xRot = -DEG_TO_RAD * rightElbowDeg;
+        float rightElbowDeg = 5.0F + Math.max(0, (-rightArmX - 60.0F) * 0.08F);
+        this.rightForearm.xRot = DEG_TO_RAD * rightElbowDeg;
+        this.rightSleeveForearm.xRot = DEG_TO_RAD * rightElbowDeg;
 
         float leftArmX = entity.getLeftArmPose().getX();
-        float leftElbowDeg = Math.max(0, (-leftArmX - 15.0F) * 0.35F);
-        this.leftForearm.xRot = -DEG_TO_RAD * leftElbowDeg;
-        this.leftSleeveForearm.xRot = -DEG_TO_RAD * leftElbowDeg;
+        float leftElbowDeg = 5.0F + Math.max(0, (-leftArmX - 60.0F) * 0.08F);
+        this.leftForearm.xRot = DEG_TO_RAD * leftElbowDeg;
+        this.leftSleeveForearm.xRot = DEG_TO_RAD * leftElbowDeg;
 
         if (this.slim) {
             this.slimRightForearm.xRot = this.rightForearm.xRot;
             this.slimLeftForearm.xRot = this.leftForearm.xRot;
         }
 
+        // Knee bend: when the leg lifts forward (positive X) the knee bends backwards.
+        // Increased from 0.25 to 0.6 for a much more visible effect.
         float rightLegX = entity.getRightLegPose().getX();
-        float rightKneeDeg = Math.max(0, rightLegX * 0.25F);
+        float rightKneeDeg = Math.max(0, rightLegX * 0.6F);
         this.rightLowerLeg.xRot = -DEG_TO_RAD * rightKneeDeg;
 
         float leftLegX = entity.getLeftLegPose().getX();
-        float leftKneeDeg = Math.max(0, leftLegX * 0.25F);
+        float leftKneeDeg = Math.max(0, leftLegX * 0.6F);
         this.leftLowerLeg.xRot = -DEG_TO_RAD * leftKneeDeg;
     }
 

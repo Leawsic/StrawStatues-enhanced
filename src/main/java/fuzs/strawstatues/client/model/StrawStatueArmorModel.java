@@ -27,19 +27,19 @@ public class StrawStatueArmorModel<T extends ArmorStand> extends HumanoidModel<T
         float DEG_TO_RAD = 0.017453292F;
 
         float rightArmX = entity.getRightArmPose().getX();
-        float rightElbowDeg = Math.max(0, (-rightArmX - 15.0F) * 0.35F);
-        this.rightForearm.xRot = -DEG_TO_RAD * rightElbowDeg;
+        float rightElbowDeg = 5.0F + Math.max(0, (-rightArmX - 60.0F) * 0.08F);
+        this.rightForearm.xRot = DEG_TO_RAD * rightElbowDeg;
 
         float leftArmX = entity.getLeftArmPose().getX();
-        float leftElbowDeg = Math.max(0, (-leftArmX - 15.0F) * 0.35F);
-        this.leftForearm.xRot = -DEG_TO_RAD * leftElbowDeg;
+        float leftElbowDeg = 5.0F + Math.max(0, (-leftArmX - 60.0F) * 0.08F);
+        this.leftForearm.xRot = DEG_TO_RAD * leftElbowDeg;
 
         float rightLegX = entity.getRightLegPose().getX();
-        float rightKneeDeg = Math.max(0, rightLegX * 0.25F);
+        float rightKneeDeg = Math.max(0, rightLegX * 0.6F);
         this.rightLowerLeg.xRot = -DEG_TO_RAD * rightKneeDeg;
 
         float leftLegX = entity.getLeftLegPose().getX();
-        float leftKneeDeg = Math.max(0, leftLegX * 0.25F);
+        float leftKneeDeg = Math.max(0, leftLegX * 0.6F);
         this.leftLowerLeg.xRot = -DEG_TO_RAD * leftKneeDeg;
     }
 }
