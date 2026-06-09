@@ -300,19 +300,12 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
 
     // ── Cache entry ─────────────────────────────────────────
 
-    private static class ModifiedSkinEntry {
-        final ResourceLocation location;
-        final StrawStatueEyeData eyeData;
-
-        ModifiedSkinEntry(ResourceLocation location, StrawStatueEyeData eyeData) {
-            this.location = location;
-            this.eyeData = eyeData;
-        }
+    private record ModifiedSkinEntry(ResourceLocation location, StrawStatueEyeData eyeData) {
 
         boolean matches(StrawStatueEyeData other) {
-            return this.eyeData.equals(other);
+                return this.eyeData.equals(other);
+            }
         }
-    }
 
     @Override
     protected void scale(StrawStatue livingEntity, PoseStack matrixStack, float partialTickTime) {

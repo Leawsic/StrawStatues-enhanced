@@ -23,7 +23,6 @@ import fuzs.strawstatues.init.ModRegistry;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.model.ArmorStandArmorModel;
 import net.minecraft.client.model.geom.LayerDefinitions;
 import net.minecraft.core.Rotations;
 import net.minecraft.network.chat.Component;
@@ -101,7 +100,7 @@ public class StrawStatuesClient implements ClientModConstructor {
     @Override
     public void onRegisterLayerDefinitions(LayerDefinitionsContext context) {
         context.registerLayerDefinition(ModClientRegistry.STRAW_STATUE, StrawStatueModel::createBodyLayer);
-        context.registerLayerDefinition(ModClientRegistry.STRAW_STATUE_INNER_ARMOR, () -> ArmorStandArmorModel.createBodyLayer(LayerDefinitions.INNER_ARMOR_DEFORMATION));
-        context.registerLayerDefinition(ModClientRegistry.STRAW_STATUE_OUTER_ARMOR, () -> ArmorStandArmorModel.createBodyLayer(LayerDefinitions.OUTER_ARMOR_DEFORMATION));
+        context.registerLayerDefinition(ModClientRegistry.STRAW_STATUE_INNER_ARMOR, () -> StrawStatueModel.createSplitArmorLayer(LayerDefinitions.INNER_ARMOR_DEFORMATION));
+        context.registerLayerDefinition(ModClientRegistry.STRAW_STATUE_OUTER_ARMOR, () -> StrawStatueModel.createSplitArmorLayer(LayerDefinitions.OUTER_ARMOR_DEFORMATION));
     }
 }

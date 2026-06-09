@@ -21,6 +21,14 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
     public final ModelPart slimRightArm;
     public final ModelPart slimLeftSleeve;
     public final ModelPart slimRightSleeve;
+    public final ModelPart leftForearm;
+    public final ModelPart rightForearm;
+    public final ModelPart leftLowerLeg;
+    public final ModelPart rightLowerLeg;
+    public final ModelPart slimLeftForearm;
+    public final ModelPart slimRightForearm;
+    public final ModelPart rightSleeveForearm;
+    public final ModelPart leftSleeveForearm;
     private final ModelPart cloak;
 
     private boolean slim;
@@ -31,18 +39,121 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
         this.slimRightArm = modelPart.getChild("slim_right_arm");
         this.slimLeftSleeve = modelPart.getChild("slim_left_sleeve");
         this.slimRightSleeve = modelPart.getChild("slim_right_sleeve");
+        this.leftForearm = modelPart.getChild("left_arm").getChild("left_forearm");
+        this.rightForearm = modelPart.getChild("right_arm").getChild("right_forearm");
+        this.leftLowerLeg = modelPart.getChild("left_leg").getChild("left_lower_leg");
+        this.rightLowerLeg = modelPart.getChild("right_leg").getChild("right_lower_leg");
+        this.slimLeftForearm = modelPart.getChild("slim_left_arm").getChild("slim_left_forearm");
+        this.slimRightForearm = modelPart.getChild("slim_right_arm").getChild("slim_right_forearm");
+        this.rightSleeveForearm = modelPart.getChild("right_sleeve").getChild("right_sleeve_forearm");
+        this.leftSleeveForearm = modelPart.getChild("left_sleeve").getChild("left_sleeve_forearm");
         this.cloak = modelPart.getChild("cloak");
     }
+
+    // ───────── Static layer factories ─────────
 
     public static LayerDefinition createBodyLayer() {
         MeshDefinition meshDefinition = PlayerModel.createMesh(CubeDeformation.NONE, false);
         PartDefinition partDefinition = meshDefinition.getRoot();
-        partDefinition.addOrReplaceChild("slim_left_arm", CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, CubeDeformation.NONE), PartPose.offset(5.0F, 2.5F, 0.0F));
-        partDefinition.addOrReplaceChild("slim_right_arm", CubeListBuilder.create().texOffs(40, 16).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, CubeDeformation.NONE), PartPose.offset(-5.0F, 2.5F, 0.0F));
-        partDefinition.addOrReplaceChild("slim_left_sleeve", CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)), PartPose.offset(5.0F, 2.5F, 0.0F));
-        partDefinition.addOrReplaceChild("slim_right_sleeve", CubeListBuilder.create().texOffs(40, 32).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 12.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)), PartPose.offset(-5.0F, 2.5F, 0.0F));
+        splitArmLegCubes(partDefinition, CubeDeformation.NONE);
+        splitSleeveCubes(partDefinition, CubeDeformation.NONE);
+        addSlimArmParts(partDefinition);
         return LayerDefinition.create(meshDefinition, 64, 64);
     }
+
+    /**
+     * Creates an armour model LayerDefinition with split limb cubes.
+     * Use this instead of {@code ArmorStandArmorModel.createBodyLayer} for matching multi-bone alignment.
+     */
+    public static LayerDefinition createSplitArmorLayer(CubeDeformation deformation) {
+        MeshDefinition mesh = HumanoidModel.createMesh(deformation, 0.0F);
+        splitArmLegCubes(mesh.getRoot(), deformation);
+        return LayerDefinition.create(mesh, 64, 64);
+    }
+
+    private static void splitArmLegCubes(PartDefinition part, CubeDeformation deform) {
+        // Right arm
+        PartDefinition rightArm = part.addOrReplaceChild("right_arm",
+                CubeListBuilder.create().texOffs(40, 16).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
+                PartPose.offset(-5.0F, 2.0F, 0.0F));
+        rightArm.addOrReplaceChild("right_forearm",
+                CubeListBuilder.create().texOffs(40, 16).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+
+        // Left arm
+        PartDefinition leftArm = part.addOrReplaceChild("left_arm",
+                CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
+                PartPose.offset(5.0F, 2.0F, 0.0F));
+        leftArm.addOrReplaceChild("left_forearm",
+                CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+
+        // Right leg
+        PartDefinition rightLeg = part.addOrReplaceChild("right_leg",
+                CubeListBuilder.create().texOffs(0, 16).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
+                PartPose.offset(-1.9F, 12.0F, 0.0F));
+        rightLeg.addOrReplaceChild("right_lower_leg",
+                CubeListBuilder.create().texOffs(0, 16).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+
+        // Left leg
+        PartDefinition leftLeg = part.addOrReplaceChild("left_leg",
+                CubeListBuilder.create().texOffs(16, 48).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
+                PartPose.offset(1.9F, 12.0F, 0.0F));
+        leftLeg.addOrReplaceChild("left_lower_leg",
+                CubeListBuilder.create().texOffs(16, 48).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.0F, 4.0F, deform),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+    }
+
+    private static void splitSleeveCubes(PartDefinition part, CubeDeformation deform) {
+        CubeDeformation sleeveDeform = deform.extend(0.25F);
+
+        PartDefinition rightSleeve = part.addOrReplaceChild("right_sleeve",
+                CubeListBuilder.create().texOffs(40, 32).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, sleeveDeform),
+                PartPose.offset(-5.0F, 2.0F, 0.0F));
+        rightSleeve.addOrReplaceChild("right_sleeve_forearm",
+                CubeListBuilder.create().texOffs(40, 32).addBox(-3.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, sleeveDeform),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+
+        PartDefinition leftSleeve = part.addOrReplaceChild("left_sleeve",
+                CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, sleeveDeform),
+                PartPose.offset(5.0F, 2.0F, 0.0F));
+        leftSleeve.addOrReplaceChild("left_sleeve_forearm",
+                CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 4.0F, 6.0F, 4.0F, sleeveDeform),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+    }
+
+    private static void addSlimArmParts(PartDefinition part) {
+        PartDefinition slimLeftArm = part.addOrReplaceChild("slim_left_arm",
+                CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE),
+                PartPose.offset(5.0F, 2.5F, 0.0F));
+        slimLeftArm.addOrReplaceChild("slim_left_forearm",
+                CubeListBuilder.create().texOffs(32, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+
+        PartDefinition slimRightArm = part.addOrReplaceChild("slim_right_arm",
+                CubeListBuilder.create().texOffs(40, 16).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE),
+                PartPose.offset(-5.0F, 2.5F, 0.0F));
+        slimRightArm.addOrReplaceChild("slim_right_forearm",
+                CubeListBuilder.create().texOffs(40, 16).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+
+        PartDefinition slimLeftSleeve = part.addOrReplaceChild("slim_left_sleeve",
+                CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
+                PartPose.offset(5.0F, 2.5F, 0.0F));
+        slimLeftSleeve.addOrReplaceChild("slim_left_sleeve_forearm",
+                CubeListBuilder.create().texOffs(48, 48).addBox(-1.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+
+        PartDefinition slimRightSleeve = part.addOrReplaceChild("slim_right_sleeve",
+                CubeListBuilder.create().texOffs(40, 32).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
+                PartPose.offset(-5.0F, 2.5F, 0.0F));
+        slimRightSleeve.addOrReplaceChild("slim_right_sleeve_forearm",
+                CubeListBuilder.create().texOffs(40, 32).addBox(-2.0F, -2.0F, -2.0F, 3.0F, 6.0F, 4.0F, CubeDeformation.NONE.extend(0.25F)),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+    }
+
+    // ───────── Instance methods ─────────
 
     @Override
     protected Iterable<ModelPart> headParts() {
@@ -68,15 +179,39 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
         this.slimRightSleeve.copyFrom(this.slimRightArm);
         this.jacket.copyFrom(this.body);
         this.setupCrouchingAnimCape(entity);
+        this.applySubBoneRotations(entity);
+    }
+
+    private void applySubBoneRotations(StrawStatue entity) {
+        float DEG_TO_RAD = 0.017453292F;
+
+        float rightArmX = entity.getRightArmPose().getX();
+        float rightElbowDeg = Math.max(0, (-rightArmX - 15.0F) * 0.35F);
+        this.rightForearm.xRot = -DEG_TO_RAD * rightElbowDeg;
+        this.rightSleeveForearm.xRot = -DEG_TO_RAD * rightElbowDeg;
+
+        float leftArmX = entity.getLeftArmPose().getX();
+        float leftElbowDeg = Math.max(0, (-leftArmX - 15.0F) * 0.35F);
+        this.leftForearm.xRot = -DEG_TO_RAD * leftElbowDeg;
+        this.leftSleeveForearm.xRot = -DEG_TO_RAD * leftElbowDeg;
+
+        if (this.slim) {
+            this.slimRightForearm.xRot = this.rightForearm.xRot;
+            this.slimLeftForearm.xRot = this.leftForearm.xRot;
+        }
+
+        float rightLegX = entity.getRightLegPose().getX();
+        float rightKneeDeg = Math.max(0, rightLegX * 0.25F);
+        this.rightLowerLeg.xRot = -DEG_TO_RAD * rightKneeDeg;
+
+        float leftLegX = entity.getLeftLegPose().getX();
+        float leftKneeDeg = Math.max(0, leftLegX * 0.25F);
+        this.leftLowerLeg.xRot = -DEG_TO_RAD * leftKneeDeg;
     }
 
     private void setupSlimAnim(StrawStatue entity) {
         this.leftArm.visible = this.slimLeftArm.visible = true;
         this.rightArm.visible = this.slimRightArm.visible = true;
-        // very bad hack using slim like this, it only works as hand items are rendered after the main model,
-        // so the field will have the correct value for the current entity when those render
-        // vanilla does this using separate renderers/models, but multiple renderers for a single entity is hardcoded only for players
-        // not worth a mixin though as this seems to work fine
         this.slim = entity.slimArms();
         this.slimLeftArm.xRot = 0.017453292F * entity.getLeftArmPose().getX();
         this.slimLeftArm.yRot = 0.017453292F * entity.getLeftArmPose().getY();
@@ -94,7 +229,6 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
     }
 
     private void setupCloakAnim(StrawStatue entity) {
-        // use cloak instead of body, changing body rotations looks just weird
         this.cloak.xRot = -0.017453292F * entity.getBodyPose().getX();
         this.cloak.yRot = 0.017453292F * entity.getBodyPose().getY();
         this.cloak.zRot = -0.017453292F * entity.getBodyPose().getZ();
@@ -121,6 +255,7 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
     @Override
     public void translateToHand(HumanoidArm side, PoseStack poseStack) {
         ModelPart modelPart = this.getArm(side);
+        ModelPart forearmPart = side == HumanoidArm.RIGHT ? this.rightForearm : this.leftForearm;
         if (this.slim) {
             float f = 0.5F * (float)(side == HumanoidArm.RIGHT ? 1 : -1);
             modelPart.x += f;
@@ -129,7 +264,11 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
         } else {
             modelPart.translateAndRotate(poseStack);
         }
+        forearmPart.translateAndRotate(poseStack);
+        poseStack.translate(0.0F, 4.0F / 16.0F, 0.0F);
     }
+
+    // ───────── Static pose helpers (used by armour model too) ─────────
 
     public static <T extends ArmorStand> void setupPoseAnim(HumanoidModel<T> model, T entity) {
         model.head.xRot = 0.017453292F * entity.getHeadPose().getX();
