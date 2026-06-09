@@ -18,6 +18,7 @@ import fuzs.strawstatues.client.importmodel.ImportedModelRegistry;
 import fuzs.strawstatues.client.init.ModClientRegistry;
 import fuzs.strawstatues.client.model.StrawStatueModel;
 import fuzs.strawstatues.client.renderer.entity.ImportedStrawStatueRenderer;
+import fuzs.strawstatues.client.renderer.entity.StrawStatueGeoRenderer;
 import fuzs.strawstatues.client.renderer.entity.StrawStatueRenderer;
 import fuzs.strawstatues.init.ModRegistry;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
@@ -93,7 +94,7 @@ public class StrawStatuesClient implements ClientModConstructor {
 
     @Override
     public void onRegisterEntityRenderers(EntityRenderersContext context) {
-        context.registerEntityRenderer(ModRegistry.STRAW_STATUE_ENTITY_TYPE.get(), StrawStatueRenderer::new);
+        context.registerEntityRenderer(ModRegistry.STRAW_STATUE_ENTITY_TYPE.get(), StrawStatueGeoRenderer::new);
         context.registerEntityRenderer(ModRegistry.IMPORTED_STRAW_STATUE_ENTITY_TYPE.get(), ImportedStrawStatueRenderer::new);
     }
 

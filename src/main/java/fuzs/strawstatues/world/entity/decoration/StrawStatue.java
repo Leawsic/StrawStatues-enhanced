@@ -40,11 +40,17 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.NavigableMap;
 import java.util.Optional;
 
-public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
+public class StrawStatue extends ArmorStand implements ArmorStandDataProvider, GeoEntity {
     public static final Rotations DEFAULT_ENTITY_ROTATIONS = new Rotations(180.0F, 0.0F, 180.0F);
     public static final float DEFAULT_ENTITY_SCALE = 3.0F;
     public static final float MIN_MODEL_SCALE = 1.0F;
@@ -70,6 +76,7 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     public Rotations entityRotationsO = DEFAULT_ENTITY_ROTATIONS;
     @Nullable
     private StrawStatueEyeData eyeData;
+    private final AnimatableInstanceCache animCache = GeckoLibUtil.createInstanceCache(this);
 
     public StrawStatue(EntityType<? extends StrawStatue> entityType, Level level) {
         super(entityType, level);
@@ -463,5 +470,22 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     @Override
     public ArmorStandStyleOption[] getStyleOptions() {
         return new ArmorStandStyleOption[]{ArmorStandStyleOptions.SHOW_NAME, ArmorStandStyleOptions.SMALL, ModRegistry.SLIM_ARMS_STYLE_OPTION, ModRegistry.CROUCHING_STYLE_OPTION, ArmorStandStyleOptions.NO_GRAVITY, ArmorStandStyleOptions.SEALED};
+    }
+
+    // ── GeoEntity implementation ────────────────────────────
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "main", 0, state -> PlayState.CONTINUE));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.animCache;
+    }
+
+    @Override
+    public double getTick(Object object) {
+        return this.tickCount;
     }
 }
