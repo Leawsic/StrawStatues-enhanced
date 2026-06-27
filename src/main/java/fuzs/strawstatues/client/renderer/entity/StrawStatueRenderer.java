@@ -22,6 +22,7 @@ import net.minecraft.client.renderer.entity.layers.CustomHeadLayer;
 import net.minecraft.client.renderer.entity.layers.ElytraLayer;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -29,6 +30,8 @@ import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +39,7 @@ import java.util.UUID;
 
 public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, StrawStatueModel> {
     public static final ResourceLocation STRAW_STATUE_LOCATION = StrawStatues.id("textures/entity/straw_statue.png");
-    private static final int SKIN_FACE_X = 8, SKIN_FACE_Y = 8, FACE_SIZE = 8;
+    private static final int SKIN_FACE_X = 8, SKIN_FACE_Y = 8;
 
     /** Cache of modified skin textures per entity, regenerated when eye data changes. */
     private final Map<UUID, ModifiedSkinEntry> modifiedSkinCache = new HashMap<>();
@@ -56,8 +59,9 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
         if (gameProfile != null) {
             Minecraft minecraft = Minecraft.getInstance();
             Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> map = minecraft.getSkinManager().getInsecureSkinInformation(gameProfile);
-            if (map.containsKey(type)) {
-                return Optional.of(minecraft.getSkinManager().registerTexture(map.get(type), type));
+            MinecraftProfileTexture texture = map.get(type);
+            if (texture != null) {
+                return Optional.of(minecraft.getSkinManager().registerTexture(texture, type));
             }
         }
         return Optional.empty();
@@ -69,9 +73,9 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
      * Uses reflection to access the private {@code image} field of SimpleTexture/HttpTexture.
      */
     @Nullable
-    public static com.mojang.blaze3d.platform.NativeImage readSkinNativeImage(ResourceLocation skinLocation) {
+    public static NativeImage readSkinNativeImage(ResourceLocation skinLocation) {
         Minecraft mc = Minecraft.getInstance();
-        net.minecraft.client.renderer.texture.AbstractTexture tex = mc.getTextureManager().getTexture(skinLocation);
+        AbstractTexture tex = mc.getTextureManager().getTexture(skinLocation);
 
         // Approach 1: reflection into SimpleTexture/HttpTexture
         StrawStatues.LOGGER.debug("readSkinNativeImage: trying reflection for {}", skinLocation);
@@ -84,7 +88,7 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
                     Object value = field.get(tex);
                     StrawStatues.LOGGER.debug("readSkinNativeImage: class={} field.image={}", clazz.getSimpleName(),
                             value != null ? value.getClass().getSimpleName() : "null");
-                    if (value instanceof com.mojang.blaze3d.platform.NativeImage img) {
+                    if (value instanceof NativeImage img) {
                         return img;
                     }
                 } catch (NoSuchFieldException e) {
@@ -101,7 +105,7 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
             var resOpt = mc.getResourceManager().getResource(skinLocation);
             if (resOpt.isPresent()) {
                 StrawStatues.LOGGER.debug("readSkinNativeImage: found in ResourceManager");
-                return com.mojang.blaze3d.platform.NativeImage.read(resOpt.get().open());
+                return NativeImage.read(resOpt.get().open());
             }
         } catch (Exception e) {
             StrawStatues.LOGGER.debug("readSkinNativeImage: ResourceManager fallback failed", e);
@@ -115,7 +119,7 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
      * Fallback: downloads the skin NativeImage directly from Mojang's skin server URL.
      */
     @Nullable
-    public static com.mojang.blaze3d.platform.NativeImage readSkinFromUrl(StrawStatue entity) {
+    public static NativeImage readSkinFromUrl(StrawStatue entity) {
         GameProfile gameProfile = entity.getOwner().orElse(null);
         if (gameProfile == null) return null;
 
@@ -129,15 +133,13 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
         }
 
         try {
-            String url = texture.getUrl();
-            StrawStatues.LOGGER.debug("readSkinFromUrl: downloading from {}", url);
-            java.net.URL skinUrl = new java.net.URL(url);
-            java.io.InputStream in = skinUrl.openStream();
-            com.mojang.blaze3d.platform.NativeImage img =
-                    com.mojang.blaze3d.platform.NativeImage.read(in);
-            in.close();
-            StrawStatues.LOGGER.debug("readSkinFromUrl: success, {}×{}", img.getWidth(), img.getHeight());
-            return img;
+            URL skinUrl = new URL(texture.getUrl());
+            StrawStatues.LOGGER.debug("readSkinFromUrl: downloading from {}", skinUrl);
+            try (InputStream in = skinUrl.openStream()) {
+                NativeImage img = NativeImage.read(in);
+                StrawStatues.LOGGER.debug("readSkinFromUrl: success, {}×{}", img.getWidth(), img.getHeight());
+                return img;
+            }
         } catch (Exception e) {
             StrawStatues.LOGGER.warn("readSkinFromUrl: download failed", e);
             return null;
@@ -177,10 +179,10 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
             return original;
         }
 
-        // Return cached modified skin if still valid
+        // Return cached modified skin if still valid (same skin + same eye data)
         UUID uuid = entity.getUUID();
         ModifiedSkinEntry cached = modifiedSkinCache.get(uuid);
-        if (cached != null && cached.matches(eyeData)) {
+        if (cached != null && cached.matches(eyeData, original)) {
             return cached.location;
         }
 
@@ -236,9 +238,8 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
             Minecraft.getInstance().getTextureManager().register(loc, dynTex);
 
             // Update cache with new entry (holds DynamicTexture ref for future release)
-            modifiedSkinCache.put(uuid, new ModifiedSkinEntry(loc, eyeData.copy(), dynTex));
+            modifiedSkinCache.put(uuid, new ModifiedSkinEntry(loc, originalSkin, eyeData.copy(), dynTex));
 
-            copy.close();
             return loc;
 
         } catch (Exception e) {
@@ -313,17 +314,19 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
 
     private static final class ModifiedSkinEntry {
         final ResourceLocation location;
+        final ResourceLocation originalSkin;
         final StrawStatueEyeData eyeData;
         DynamicTexture texture;
 
-        ModifiedSkinEntry(ResourceLocation location, StrawStatueEyeData eyeData, DynamicTexture texture) {
+        ModifiedSkinEntry(ResourceLocation location, ResourceLocation originalSkin, StrawStatueEyeData eyeData, DynamicTexture texture) {
             this.location = location;
+            this.originalSkin = originalSkin;
             this.eyeData = eyeData.copy();
             this.texture = texture;
         }
 
-        boolean matches(StrawStatueEyeData other) {
-            return this.eyeData.equals(other);
+        boolean matches(StrawStatueEyeData eyeData, ResourceLocation originalSkin) {
+            return this.originalSkin.equals(originalSkin) && this.eyeData.equals(eyeData);
         }
 
         /** Release the underlying GPU texture and native image to prevent leaks. */
