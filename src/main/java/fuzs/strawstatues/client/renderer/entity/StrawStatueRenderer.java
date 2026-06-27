@@ -40,7 +40,6 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
 
     /** Cache of modified skin textures per entity, regenerated when eye data changes. */
     private final Map<UUID, ModifiedSkinEntry> modifiedSkinCache = new HashMap<>();
-    private int skinGenCounter;
 
     public StrawStatueRenderer(EntityRendererProvider.Context context) {
         super(context, new StrawStatueModel(context.bakeLayer(ModClientRegistry.STRAW_STATUE), false), 0.0F);
@@ -186,9 +185,9 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
         }
 
         // Generate a new modified skin texture with eye changes baked in
+        // (bakeEyeIntoTexture handles cache management internally)
         ResourceLocation modified = bakeEyeIntoTexture(entity, eyeData, original);
         if (modified != null) {
-            modifiedSkinCache.put(uuid, new ModifiedSkinEntry(modified, eyeData.copy()));
             return modified;
         }
 
@@ -224,9 +223,21 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
             applyEyeToSkin(copy, eyeData, false);
 
             DynamicTexture dynTex = new DynamicTexture(copy);
-            ResourceLocation loc = StrawStatues.id("skin_modified/" +
-                    entity.getUUID().toString().replace("-", "") + "_" + (++skinGenCounter));
+            // Stable per-entity location — no more infinite ResourceLocation growth
+            UUID uuid = entity.getUUID();
+            ResourceLocation loc = StrawStatues.id("skin_modified/" + uuid.toString().replace("-", ""));
+
+            // Release old texture for this entity before registering new one
+            ModifiedSkinEntry oldEntry = modifiedSkinCache.get(uuid);
+            if (oldEntry != null) {
+                oldEntry.release();
+            }
+
             Minecraft.getInstance().getTextureManager().register(loc, dynTex);
+
+            // Update cache with new entry (holds DynamicTexture ref for future release)
+            modifiedSkinCache.put(uuid, new ModifiedSkinEntry(loc, eyeData.copy(), dynTex));
+
             copy.close();
             return loc;
 
@@ -300,12 +311,29 @@ public class StrawStatueRenderer extends LivingEntityRenderer<StrawStatue, Straw
 
     // ── Cache entry ─────────────────────────────────────────
 
-    private record ModifiedSkinEntry(ResourceLocation location, StrawStatueEyeData eyeData) {
+    private static final class ModifiedSkinEntry {
+        final ResourceLocation location;
+        final StrawStatueEyeData eyeData;
+        DynamicTexture texture;
+
+        ModifiedSkinEntry(ResourceLocation location, StrawStatueEyeData eyeData, DynamicTexture texture) {
+            this.location = location;
+            this.eyeData = eyeData.copy();
+            this.texture = texture;
+        }
 
         boolean matches(StrawStatueEyeData other) {
-                return this.eyeData.equals(other);
+            return this.eyeData.equals(other);
+        }
+
+        /** Release the underlying GPU texture and native image to prevent leaks. */
+        void release() {
+            if (this.texture != null) {
+                this.texture.close();
+                this.texture = null;
             }
         }
+    }
 
     @Override
     protected void scale(StrawStatue livingEntity, PoseStack matrixStack, float partialTickTime) {
