@@ -15,13 +15,6 @@ import fuzs.strawstatues.network.client.C2SStrawStatueOwnerMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueEyeMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueScaleMessage;
 import fuzs.strawstatues.network.client.C2SImportedStrawStatueMessage;
-import fuzs.strawstatues.network.client.C2SUploadModelMessage;
-import fuzs.strawstatues.network.server.C2SRequestRemoteModelsMessage;
-import fuzs.strawstatues.network.server.C2SSelectRemoteModelMessage;
-import fuzs.strawstatues.network.server.S2CRemoteModelListMessage;
-import fuzs.strawstatues.network.server.S2CDownloadModelMessage;
-import fuzs.strawstatues.network.server.S2CDownloadCompleteMessage;
-import fuzs.strawstatues.server.importmodel.ServerModelRegistry;
 import fuzs.strawstatues.world.entity.decoration.ImportedStrawStatue;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
 import net.minecraft.core.BlockPos;
@@ -60,12 +53,6 @@ public class StrawStatues implements ModConstructor {
         NETWORK.register(C2SStrawStatueScaleMessage.class, C2SStrawStatueScaleMessage::new, MessageDirection.TO_SERVER);
         NETWORK.register(C2SStrawStatueEyeMessage.class, C2SStrawStatueEyeMessage::new, MessageDirection.TO_SERVER);
         NETWORK.register(C2SImportedStrawStatueMessage.class, C2SImportedStrawStatueMessage::new, MessageDirection.TO_SERVER);
-        NETWORK.register(C2SUploadModelMessage.class, C2SUploadModelMessage::new, MessageDirection.TO_SERVER);
-        NETWORK.register(C2SRequestRemoteModelsMessage.class, C2SRequestRemoteModelsMessage::new, MessageDirection.TO_SERVER);
-        NETWORK.register(C2SSelectRemoteModelMessage.class, C2SSelectRemoteModelMessage::new, MessageDirection.TO_SERVER);
-        NETWORK.register(S2CRemoteModelListMessage.class, S2CRemoteModelListMessage::new, MessageDirection.TO_CLIENT);
-        NETWORK.register(S2CDownloadModelMessage.class, S2CDownloadModelMessage::new, MessageDirection.TO_CLIENT);
-        NETWORK.register(S2CDownloadCompleteMessage.class, S2CDownloadCompleteMessage::new, MessageDirection.TO_CLIENT);
     }
 
     private static void registerHandlers() {
@@ -77,7 +64,6 @@ public class StrawStatues implements ModConstructor {
 
     @Override
     public void onCommonSetup() {
-        ServerModelRegistry.init();
         ArmorStandStyleOption.register(id("slimarms"), ModRegistry.SLIM_ARMS_STYLE_OPTION);
         ArmorStandStyleOption.register(id("crouching"), ModRegistry.CROUCHING_STYLE_OPTION);
         DispenserBlock.registerBehavior(ModRegistry.STRAW_STATUE_ITEM.get(), new DefaultDispenseItemBehavior() {

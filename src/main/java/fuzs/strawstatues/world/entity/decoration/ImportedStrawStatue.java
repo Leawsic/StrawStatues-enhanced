@@ -3,11 +3,8 @@ package fuzs.strawstatues.world.entity.decoration;
 import fuzs.puzzlesapi.api.statues.v1.helper.ArmorStandInteractHelper;
 import fuzs.puzzlesapi.api.statues.v1.world.inventory.data.ArmorStandScreenType;
 import fuzs.puzzleslib.api.event.v1.core.EventResultHolder;
-import fuzs.strawstatues.client.importmodel.ImportedModelRegistry;
-import fuzs.strawstatues.client.importmodel.RemoteModelCache;
 import fuzs.strawstatues.importmodel.ImportedModelData;
 import fuzs.strawstatues.init.ModRegistry;
-import fuzs.strawstatues.network.server.C2SSelectRemoteModelMessage;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -22,9 +19,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
@@ -39,9 +33,6 @@ public class ImportedStrawStatue extends StrawStatue implements GeoEntity {
 
     public static final EntityDataAccessor<CompoundTag> DATA_IMPORTED_MODEL =
             SynchedEntityData.defineId(ImportedStrawStatue.class, EntityDataSerializers.COMPOUND_TAG);
-
-    // Track auto-downloads to avoid re-requesting the same model
-    private static final Set<String> AUTO_DOWNLOADED = new HashSet<>();
 
     private final AnimatableInstanceCache animCache = GeckoLibUtil.createInstanceCache(this);
 
@@ -94,14 +85,6 @@ public class ImportedStrawStatue extends StrawStatue implements GeoEntity {
             CompoundTag tag = this.entityData.get(DATA_IMPORTED_MODEL);
             if (!tag.isEmpty()) {
                 this.importedModel = ImportedModelData.fromTag(tag);
-                // Auto-download: if this model isn't in local cache, request from server
-                String modelId = this.importedModel.getModelId();
-                if (!modelId.isEmpty() && this.level().isClientSide
-                        && !ImportedModelRegistry.isModelLoaded(modelId)
-                        && AUTO_DOWNLOADED.add(modelId)) {
-                    Map<String, String> localHashes = RemoteModelCache.computeLocalHashes(modelId);
-                    C2SSelectRemoteModelMessage.sendToServer(this.getId(), modelId, localHashes);
-                }
             } else {
                 this.importedModel = null;
             }
