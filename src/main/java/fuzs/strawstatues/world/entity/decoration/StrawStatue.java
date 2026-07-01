@@ -56,6 +56,12 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     public static final String ENTITY_SCALE_KEY = "EntityScale";
     public static final String ENTITY_ROTATIONS_KEY = "EntityRotations";
     public static final String EYE_DATA_KEY = "EyeData";
+    public static final String SUB_BONE_MODE_KEY = "SubBoneMode";
+    public static final String SUB_BONE_TARGET_KEY = "SubBoneTargetUpper";
+    public static final String RIGHT_ELBOW_KEY = "RightElbow";
+    public static final String LEFT_ELBOW_KEY = "LeftElbow";
+    public static final String RIGHT_KNEE_KEY = "RightKnee";
+    public static final String LEFT_KNEE_KEY = "LeftKnee";
     public static final EntityDataAccessor<Optional<GameProfile>> DATA_OWNER = SynchedEntityData.defineId(StrawStatue.class, ModRegistry.GAME_PROFILE_ENTITY_DATA_SERIALIZER);
     public static final EntityDataAccessor<Boolean> DATA_SLIM_ARMS = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.BOOLEAN);
     public static final EntityDataAccessor<Boolean> DATA_CROUCHING = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.BOOLEAN);
@@ -63,6 +69,12 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     public static final EntityDataAccessor<Float> DATA_ENTITY_SCALE = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.FLOAT);
     public static final EntityDataAccessor<Rotations> DATA_ENTITY_ROTATIONS = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.ROTATIONS);
     public static final EntityDataAccessor<CompoundTag> DATA_EYE_DATA = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.COMPOUND_TAG);
+    public static final EntityDataAccessor<Boolean> DATA_SUB_BONE_MODE = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.BOOLEAN);
+    public static final EntityDataAccessor<Boolean> DATA_SUB_BONE_TARGET = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.BOOLEAN);
+    public static final EntityDataAccessor<Float> DATA_RIGHT_ELBOW = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.FLOAT);
+    public static final EntityDataAccessor<Float> DATA_LEFT_ELBOW = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.FLOAT);
+    public static final EntityDataAccessor<Float> DATA_RIGHT_KNEE = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.FLOAT);
+    public static final EntityDataAccessor<Float> DATA_LEFT_KNEE = SynchedEntityData.defineId(StrawStatue.class, EntityDataSerializers.FLOAT);
 
     private final NavigableMap<Float, EntityDimensions> defaultDimensions;
     private final NavigableMap<Float, EntityDimensions> babyDimensions;
@@ -104,6 +116,12 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
         this.entityData.define(DATA_ENTITY_SCALE, DEFAULT_ENTITY_SCALE);
         this.entityData.define(DATA_ENTITY_ROTATIONS, DEFAULT_ENTITY_ROTATIONS);
         this.entityData.define(DATA_EYE_DATA, new CompoundTag());
+        this.entityData.define(DATA_SUB_BONE_MODE, false);
+        this.entityData.define(DATA_SUB_BONE_TARGET, true);
+        this.entityData.define(DATA_RIGHT_ELBOW, 0.0F);
+        this.entityData.define(DATA_LEFT_ELBOW, 0.0F);
+        this.entityData.define(DATA_RIGHT_KNEE, 0.0F);
+        this.entityData.define(DATA_LEFT_KNEE, 0.0F);
     }
 
     private static byte getAllModelParts() {
@@ -132,6 +150,14 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
         }
         if (this.eyeData != null && this.eyeData.isValid()) {
             tag.put(EYE_DATA_KEY, this.eyeData.toTag());
+        }
+        tag.putBoolean(SUB_BONE_MODE_KEY, this.isSubBoneMode());
+        tag.putBoolean(SUB_BONE_TARGET_KEY, this.isSubBoneTargetUpper());
+        if (this.isSubBoneMode()) {
+            tag.putFloat(RIGHT_ELBOW_KEY, this.getRightElbow());
+            tag.putFloat(LEFT_ELBOW_KEY, this.getLeftElbow());
+            tag.putFloat(RIGHT_KNEE_KEY, this.getRightKnee());
+            tag.putFloat(LEFT_KNEE_KEY, this.getLeftKnee());
         }
     }
 
@@ -163,6 +189,18 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
             CompoundTag eyeTag = tag.getCompound(EYE_DATA_KEY);
             this.eyeData = StrawStatueEyeData.fromTag(eyeTag);
             this.entityData.set(DATA_EYE_DATA, eyeTag);
+        }
+        if (tag.contains(SUB_BONE_MODE_KEY, Tag.TAG_BYTE)) {
+            this.setSubBoneMode(tag.getBoolean(SUB_BONE_MODE_KEY));
+        }
+        if (tag.contains(SUB_BONE_TARGET_KEY, Tag.TAG_BYTE)) {
+            this.setSubBoneTargetUpper(tag.getBoolean(SUB_BONE_TARGET_KEY));
+        }
+        if (tag.contains(RIGHT_ELBOW_KEY, Tag.TAG_FLOAT)) {
+            this.setRightElbow(tag.getFloat(RIGHT_ELBOW_KEY));
+            this.setLeftElbow(tag.getFloat(LEFT_ELBOW_KEY));
+            this.setRightKnee(tag.getFloat(RIGHT_KNEE_KEY));
+            this.setLeftKnee(tag.getFloat(LEFT_KNEE_KEY));
         }
     }
 
@@ -338,6 +376,56 @@ public class StrawStatue extends ArmorStand implements ArmorStandDataProvider {
     @Override
     public boolean isCrouching() {
         return this.entityData.get(DATA_CROUCHING);
+    }
+
+    // ── Sub-bone mode ─────────────────────────────────────
+
+    public boolean isSubBoneMode() {
+        return this.entityData.get(DATA_SUB_BONE_MODE);
+    }
+
+    public void setSubBoneMode(boolean subBoneMode) {
+        this.entityData.set(DATA_SUB_BONE_MODE, subBoneMode);
+    }
+
+    public boolean isSubBoneTargetUpper() {
+        return this.entityData.get(DATA_SUB_BONE_TARGET);
+    }
+
+    public void setSubBoneTargetUpper(boolean upper) {
+        this.entityData.set(DATA_SUB_BONE_TARGET, upper);
+    }
+
+    public float getRightElbow() {
+        return this.entityData.get(DATA_RIGHT_ELBOW);
+    }
+
+    public void setRightElbow(float angle) {
+        this.entityData.set(DATA_RIGHT_ELBOW, Mth.clamp(angle, -90.0F, 90.0F));
+    }
+
+    public float getLeftElbow() {
+        return this.entityData.get(DATA_LEFT_ELBOW);
+    }
+
+    public void setLeftElbow(float angle) {
+        this.entityData.set(DATA_LEFT_ELBOW, Mth.clamp(angle, -90.0F, 90.0F));
+    }
+
+    public float getRightKnee() {
+        return this.entityData.get(DATA_RIGHT_KNEE);
+    }
+
+    public void setRightKnee(float angle) {
+        this.entityData.set(DATA_RIGHT_KNEE, Mth.clamp(angle, -90.0F, 90.0F));
+    }
+
+    public float getLeftKnee() {
+        return this.entityData.get(DATA_LEFT_KNEE);
+    }
+
+    public void setLeftKnee(float angle) {
+        this.entityData.set(DATA_LEFT_KNEE, Mth.clamp(angle, -90.0F, 90.0F));
     }
 
     @Override

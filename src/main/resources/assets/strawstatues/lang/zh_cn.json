@@ -28,5 +28,13 @@
   "strawstatues.screen.importedModel.select": "选择",
   "strawstatues.screen.importedModel.delete": "删除",
   "strawstatues.screen.importedModel.reload": "重新加载",
-  "strawstatues.screen.importedModel.dropHint": "将 .zip 文件拖放到此处以导入"
+  "strawstatues.screen.importedModel.dropHint": "将 .zip 文件拖放到此处以导入",
+  "strawstatues.screen.subBone.auto": "算法模式：子骨角度由算法自动计算",
+  "strawstatues.screen.subBone.manual": "手动模式：自由调节子骨角度",
+  "strawstatues.screen.subBone.rightElbow": "右肘",
+  "strawstatues.screen.subBone.leftElbow": "左肘",
+  "strawstatues.screen.subBone.rightKnee": "右膝",
+  "strawstatues.screen.subBone.leftKnee": "左膝",
+  "strawstatues.screen.subBone.upperArm": "大臂",
+  "strawstatues.screen.subBone.forearm": "小臂"
 }

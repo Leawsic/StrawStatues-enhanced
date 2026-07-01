@@ -15,6 +15,8 @@ import fuzs.strawstatues.network.client.C2SStrawStatueOwnerMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueEyeMessage;
 import fuzs.strawstatues.network.client.C2SStrawStatueScaleMessage;
 import fuzs.strawstatues.network.client.C2SImportedStrawStatueMessage;
+import fuzs.strawstatues.network.client.C2SStrawStatueSubBoneModeMessage;
+import fuzs.strawstatues.network.client.C2SStrawStatueSubBoneMessage;
 import fuzs.strawstatues.world.entity.decoration.ImportedStrawStatue;
 import fuzs.strawstatues.world.entity.decoration.StrawStatue;
 import net.minecraft.core.BlockPos;
@@ -53,6 +55,8 @@ public class StrawStatues implements ModConstructor {
         NETWORK.register(C2SStrawStatueScaleMessage.class, C2SStrawStatueScaleMessage::new, MessageDirection.TO_SERVER);
         NETWORK.register(C2SStrawStatueEyeMessage.class, C2SStrawStatueEyeMessage::new, MessageDirection.TO_SERVER);
         NETWORK.register(C2SImportedStrawStatueMessage.class, C2SImportedStrawStatueMessage::new, MessageDirection.TO_SERVER);
+        NETWORK.register(C2SStrawStatueSubBoneModeMessage.class, C2SStrawStatueSubBoneModeMessage::new, MessageDirection.TO_SERVER);
+        NETWORK.register(C2SStrawStatueSubBoneMessage.class, C2SStrawStatueSubBoneMessage::new, MessageDirection.TO_SERVER);
     }
 
     private static void registerHandlers() {

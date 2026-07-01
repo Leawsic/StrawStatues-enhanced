@@ -231,34 +231,51 @@ public class StrawStatueModel extends PlayerModel<StrawStatue> {
     private void applySubBoneRotations(StrawStatue entity) {
         float DEG_TO_RAD = 0.017453292F;
 
-        // Elbow bend: same rotation for inner (arm) + outer (sleeve) layers
-        float rightArmX = entity.getRightArmPose().getX();
-        float rightElbowDeg = 5.0F + Math.max(0, (-rightArmX - 60.0F) * 0.08F);
-        this.rightForearm.xRot = DEG_TO_RAD * rightElbowDeg;
-        this.rightSleeveForearm.xRot = DEG_TO_RAD * rightElbowDeg;
+        if (entity.isSubBoneMode()) {
+            // Manual mode: use stored sub-bone angles from entity data
+            this.rightForearm.xRot = DEG_TO_RAD * entity.getRightElbow();
+            this.rightSleeveForearm.xRot = DEG_TO_RAD * entity.getRightElbow();
+            this.leftForearm.xRot = DEG_TO_RAD * entity.getLeftElbow();
+            this.leftSleeveForearm.xRot = DEG_TO_RAD * entity.getLeftElbow();
+            this.rightLowerLeg.xRot = DEG_TO_RAD * entity.getRightKnee();
+            this.rightPantsLower.xRot = DEG_TO_RAD * entity.getRightKnee();
+            this.leftLowerLeg.xRot = DEG_TO_RAD * entity.getLeftKnee();
+            this.leftPantsLower.xRot = DEG_TO_RAD * entity.getLeftKnee();
+            if (this.slim) {
+                this.slimRightForearm.xRot = this.rightForearm.xRot;
+                this.slimLeftForearm.xRot = this.leftForearm.xRot;
+                this.slimRightSleeveForearm.xRot = this.rightForearm.xRot;
+                this.slimLeftSleeveForearm.xRot = this.leftForearm.xRot;
+            }
+        } else {
+            // Algorithmic mode: compute sub-bone angles from parent bone rotation
+            float rightArmX = entity.getRightArmPose().getX();
+            float rightElbowDeg = 5.0F + Math.max(0, (-rightArmX - 60.0F) * 0.08F);
+            this.rightForearm.xRot = DEG_TO_RAD * rightElbowDeg;
+            this.rightSleeveForearm.xRot = DEG_TO_RAD * rightElbowDeg;
 
-        float leftArmX = entity.getLeftArmPose().getX();
-        float leftElbowDeg = 5.0F + Math.max(0, (-leftArmX - 60.0F) * 0.08F);
-        this.leftForearm.xRot = DEG_TO_RAD * leftElbowDeg;
-        this.leftSleeveForearm.xRot = DEG_TO_RAD * leftElbowDeg;
+            float leftArmX = entity.getLeftArmPose().getX();
+            float leftElbowDeg = 5.0F + Math.max(0, (-leftArmX - 60.0F) * 0.08F);
+            this.leftForearm.xRot = DEG_TO_RAD * leftElbowDeg;
+            this.leftSleeveForearm.xRot = DEG_TO_RAD * leftElbowDeg;
 
-        if (this.slim) {
-            this.slimRightForearm.xRot = this.rightForearm.xRot;
-            this.slimLeftForearm.xRot = this.leftForearm.xRot;
-            this.slimRightSleeveForearm.xRot = this.rightForearm.xRot;
-            this.slimLeftSleeveForearm.xRot = this.leftForearm.xRot;
+            if (this.slim) {
+                this.slimRightForearm.xRot = this.rightForearm.xRot;
+                this.slimLeftForearm.xRot = this.leftForearm.xRot;
+                this.slimRightSleeveForearm.xRot = this.rightForearm.xRot;
+                this.slimLeftSleeveForearm.xRot = this.leftForearm.xRot;
+            }
+
+            float rightLegX = entity.getRightLegPose().getX();
+            float rightKneeDeg = Math.abs(rightLegX) * 0.5F;
+            this.rightLowerLeg.xRot = DEG_TO_RAD * rightKneeDeg;
+            this.rightPantsLower.xRot = DEG_TO_RAD * rightKneeDeg;
+
+            float leftLegX = entity.getLeftLegPose().getX();
+            float leftKneeDeg = Math.abs(leftLegX) * 0.5F;
+            this.leftLowerLeg.xRot = DEG_TO_RAD * leftKneeDeg;
+            this.leftPantsLower.xRot = DEG_TO_RAD * leftKneeDeg;
         }
-
-        // Knee bend: same rotation for inner (leg) + outer (pants) layers
-        float rightLegX = entity.getRightLegPose().getX();
-        float rightKneeDeg = Math.abs(rightLegX) * 0.5F;
-        this.rightLowerLeg.xRot = DEG_TO_RAD * rightKneeDeg;
-        this.rightPantsLower.xRot = DEG_TO_RAD * rightKneeDeg;
-
-        float leftLegX = entity.getLeftLegPose().getX();
-        float leftKneeDeg = Math.abs(leftLegX) * 0.5F;
-        this.leftLowerLeg.xRot = DEG_TO_RAD * leftKneeDeg;
-        this.leftPantsLower.xRot = DEG_TO_RAD * leftKneeDeg;
     }
 
     private void setupSlimAnim(StrawStatue entity) {

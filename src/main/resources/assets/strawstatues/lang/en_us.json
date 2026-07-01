@@ -28,5 +28,13 @@
   "strawstatues.screen.importedModel.select": "Select",
   "strawstatues.screen.importedModel.delete": "Delete",
   "strawstatues.screen.importedModel.reload": "Reload",
-  "strawstatues.screen.importedModel.dropHint": "Drag .zip files here to import"
+  "strawstatues.screen.importedModel.dropHint": "Drag .zip files here to import",
+  "strawstatues.screen.subBone.auto": "Algorithmic mode: sub-bone angles are computed automatically",
+  "strawstatues.screen.subBone.manual": "Manual mode: freely adjust sub-bone angles",
+  "strawstatues.screen.subBone.rightElbow": "Right Elbow",
+  "strawstatues.screen.subBone.leftElbow": "Left Elbow",
+  "strawstatues.screen.subBone.rightKnee": "Right Knee",
+  "strawstatues.screen.subBone.leftKnee": "Left Knee",
+  "strawstatues.screen.subBone.upperArm": "Upper Arm",
+  "strawstatues.screen.subBone.forearm": "Forearm"
 }

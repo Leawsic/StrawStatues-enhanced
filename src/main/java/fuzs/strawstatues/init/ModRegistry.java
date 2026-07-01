@@ -41,7 +41,6 @@ public class ModRegistry {
     public static final ArmorStandScreenType STRAW_STATUE_EYE_SCREEN_TYPE = new ArmorStandScreenType("eyes", new ItemStack(Items.ENDER_EYE));
     public static final ArmorStandScreenType STRAW_STATUE_POSITION_SCREEN_TYPE = new ArmorStandScreenType("position", new ItemStack(Items.GRASS_BLOCK));
     public static final ArmorStandScreenType STRAW_STATUE_SCALE_SCREEN_TYPE = new ArmorStandScreenType("scale", new ItemStack(Items.HAY_BLOCK));
-    public static final ArmorStandScreenType STRAW_STATUE_IMPORTED_MODEL_SCREEN_TYPE = new ArmorStandScreenType("importedModel", new ItemStack(Items.COMMAND_BLOCK_MINECART));
 
     // Imported model statue
     public static final RegistryReference<Item> IMPORTED_STRAW_STATUE_ITEM = REGISTRY.registerItem("imported_straw_statue", () -> new ImportedStrawStatueItem(new Item.Properties().stacksTo(16)));

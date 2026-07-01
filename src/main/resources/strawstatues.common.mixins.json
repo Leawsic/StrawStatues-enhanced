@@ -9,6 +9,12 @@
     "accessor.ArmorStandAccessor"
   ],
   "client": [
+    "accessor.ArmorStandRotationsScreenAccessor",
+    "accessor.ArmorStandScreenAccessor",
+    "accessor.BoxedSliderButtonAccessor",
+    "accessor.ScreenAccessor",
+    "client.ArmorStandRotationsScreenMixin",
+    "client.BoxedSliderButtonMixin"
   ],
   "injectors": {
     "defaultRequire": 1
